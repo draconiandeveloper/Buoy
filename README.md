@@ -11,6 +11,18 @@ HLS:Reborn is a mod manager designed for WEBFISHING using GDWeave. Based on the 
 - Search functionality for available and installed mods
 - Detailed mod information display
 - One-click setup for game directory and required components
+- NO MORE USER TRACKING!!
+
+## Changelog going from Hook, Line, & Sinker to HLS:R
+- Renamed all important elements from HLS to HLS:R
+- Removed survey stuff
+- Removed server browser
+- Removed automatic update polling on startup and periodically
+- Removed all reliance on HLS' original website. Manual updates are required now
+- Added dark mode by default
+- Renamed all parts from HLS to HLS:R
+- Removed all reliance on Google Analytics
+- Reworked exe compilation method
 
 ## Installation
 
