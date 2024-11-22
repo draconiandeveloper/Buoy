@@ -40,5 +40,5 @@ Download [the latest release EXE](https://github.com/FerretPaws/HLSReborn/releas
 - If you run into any issues, try running the program as administrator.
 - You may need to install [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) manually, I've tried to make it automatic but it's not perfect.
 
-# Credits/Attri.
+## Credits/Attri.
 - Pyoid - Origninal developer for Hook, Line, and Sinker
