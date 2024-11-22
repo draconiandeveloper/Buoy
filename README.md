@@ -1,6 +1,6 @@
 # HLS:Reborn
 
-HLS:Reborn is a mod manager designed for WEBFISHING using GDWeave.
+HLS:Reborn is a mod manager designed for WEBFISHING using GDWeave. Based on the ill-fated original Hook, Line, and Sinker
 
 ## Features
 - Easy mod installation and management
