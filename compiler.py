@@ -8,7 +8,6 @@ def compile_with_pyinstaller():
     script_file = os.path.join(project_dir, "main.py")
     icon_path = os.path.join(project_dir, "images", "icon.ico")
     images_dir = os.path.join(project_dir, "images")
-    sounds_dir = os.path.join(project_dir, "sounds")
     version_file = os.path.join(project_dir, "version.json")
     output_name = "HookLineSinkerReborn"
 
@@ -25,7 +24,6 @@ def compile_with_pyinstaller():
         "--onefile",
         "--noconsole",
         f"--add-data={images_dir};images",
-        f"--add-data={sounds_dir};sounds",
         f"--add-data={version_file};.",
         f"--icon={icon_path}",
         "--name", output_name,

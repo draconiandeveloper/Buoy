@@ -107,10 +107,6 @@ class HookLineSinkerUI:
         self.setup_logging()
         print("Logging setup complete")
         
-        # print("Setting memory limit...") :3
-        # self.set_memory_limit() :3
-        # print("Memory limit set") :3
-        
         print("Initializing queues...")
         self.gui_queue = queue.Queue()
         self.gdweave_queue = queue.Queue()
@@ -253,26 +249,6 @@ class HookLineSinkerUI:
 
         # initialize notebook :3
         self.notebook = None
-
-        # setup keyboard combinations :3
-        self.last_key = None
-        self.last_key_time = 0
-        self.root.bind('<KeyPress>', self.handle_keypress)
-        self.root.bind('<KeyRelease>', self.handle_keyrelease)
-
-        self.start_time = time.time()
-        self.last_activity_time = time.time()
-        self.total_engagement_time = 0
-        
-        # bind activity tracking to root window :3
-        self.root.bind_all('<Key>', self.track_activity)
-        self.root.bind_all('<Button>', self.track_activity)
-        self.root.bind_all('<MouseWheel>', self.track_activity)
-        
-        # start engagement tracking thread :3
-        self.engagement_thread = threading.Thread(target=self.track_engagement_time, daemon=True)
-        self.engagement_thread.start()
-        
         # track if mod limit is disabled :3
         self.mod_limit_disabled = False
 
@@ -296,7 +272,6 @@ class HookLineSinkerUI:
         if args.fresh_update:
             self.show_update_complete()
 
-    def track_activity(self, event):
         self.last_activity_time = time.time()
 
     def save_sort_preferences(self):
@@ -305,48 +280,6 @@ class HookLineSinkerUI:
             'installed_sort_by': self.installed_sort_by.get()
         })
         self.save_settings()
-
-    def track_engagement_time(self):
-        while True:
-            time.sleep(1)  # check every second :3
-            current_time = time.time()
-            # consider user engaged if less than 30 seconds since last activity :3
-            if current_time - self.last_activity_time < 30:
-                self.total_engagement_time += 1
-
-    def handle_keypress(self, event):
-        current_time = time.time()
-        
-        # reset if too much time passed between keypresses :3
-        if current_time - self.last_key_time > 0.5:
-            self.last_key = None
-        
-        # store current key info :3
-        self.last_key_time = current_time
-        
-        # check for H + M combination :3
-        if self.last_key == 'h' and event.char.lower() == 'm':
-            self.play_meow()
-        # check for H + B combination   :3
-        elif self.last_key == 'h' and event.char.lower() == 'b':
-            self.toggle_mod_limit()
-            
-        self.last_key = event.char.lower()
-
-    def handle_keyrelease(self, event):
-        # reset key tracking after release :3
-        self.last_key = None
-
-    def play_meow(self):
-        try:
-            meow_path = get_resource_path('sounds/meow.wav')
-            if os.path.exists(meow_path):
-                winsound.PlaySound(meow_path, winsound.SND_FILENAME | winsound.SND_ASYNC)
-            else:
-                messagebox.showinfo("Meow!", "😺")
-        except Exception as e:
-            logging.error(f"Failed to play meow sound: {e}")
-            messagebox.showinfo("Meow!", "😺")
 
     def toggle_mod_limit(self):
         self.mod_limit_disabled = not self.mod_limit_disabled
@@ -407,6 +340,8 @@ class HookLineSinkerUI:
             style.map('Treeview',
                       background=[('selected', self.dark_mode_colors['select_bg'])],
                       foreground=[('selected', self.dark_mode_colors['select_fg'])])
+            style.map("TCheckbutton", background=[("active", "darkgrey")])
+            style.configure("TCheckbutton", indicatorbackground=self.dark_mode_colors['bg'], indicatorforeground="white", background=self.dark_mode_colors['bg'], foreground="white")
             listboxes = [
                 self.available_listbox,
                 self.installed_listbox,
@@ -436,7 +371,7 @@ class HookLineSinkerUI:
             style.map('TNotebook.Tab', background=[], foreground=[])
             style.configure("Treeview", 
                             background="white",
-                            foreground="black",
+                            foreground="#2b2b2b",
                             fieldbackground="white")
             style.configure("Treeview.Heading",
                             background=style.lookup("TButton", "background"),
@@ -862,19 +797,13 @@ class HookLineSinkerUI:
         ttk.Button(self.mod_management_frame, text="Version", command=self.show_version_selection).grid(row=2, column=1, pady=2, padx=2, sticky="ew")        # change version logic is very buggy :3
 
         # create misc section :3
-        misc_frame = ttk.LabelFrame(action_frame, text="Misc Management")
+        misc_frame = ttk.LabelFrame(action_frame, text="Misc")
         misc_frame.grid(row=3, column=0, pady=5, padx=5, sticky="ew")
         misc_frame.grid_columnconfigure(0, weight=1)
         ttk.Button(misc_frame, text="Import .zip Mods", command=self.import_zip_mod).grid(row=0, column=0, padx=2, pady=2, sticky="ew")
         ttk.Button(misc_frame, text="Refresh Mods", command=self.refresh_all_mods).grid(row=1, column=0, pady=2, padx=2, sticky="ew")
         ttk.Button(misc_frame, text="Check for Mod Updates", command=self.check_for_updates).grid(row=2, column=0, pady=2, padx=2, sticky="ew")
-
-        # create helpful links section :3
-        help_frame = ttk.LabelFrame(action_frame, text="Helpful Links")
-        help_frame.grid(row=4, column=0, pady=5, padx=5, sticky="ew")
-        help_frame.grid_columnconfigure(0, weight=1)
-        help_frame.grid_columnconfigure(1, weight=1)
-        ttk.Button(help_frame, text="Join Discord", command=lambda: webbrowser.open("https://discord.gg/")).grid(row=1, column=0, padx=2, pady=2, sticky="ew")
+        ttk.Button(misc_frame, text="Join Discord", command=lambda: webbrowser.open("https://discord.gg/7HdZJZbkhw")).grid(row=3, column=0, padx=2, pady=2, sticky="ew")
 
         # create right panel for installed mods :3
         installed_frame = ttk.LabelFrame(mod_manager_frame, text="Installed Mods (0)")
@@ -1020,6 +949,7 @@ class HookLineSinkerUI:
         modpack_window = tk.Toplevel(self.root)
         modpack_window.title("Create Mod Profile")
         modpack_window.geometry("800x600")
+        modpack_window.configure(bg="#2b2b2b")
         
         # set window icon :3
         icon_path = get_resource_path('images/icon.ico')
@@ -1045,21 +975,27 @@ class HookLineSinkerUI:
         author_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
         ttk.Label(info_frame, text="Description:").grid(row=2, column=0, padx=5, pady=5)
-        description_text = tk.Text(info_frame, height=3)
+        description_text = tk.Text(info_frame, height=3, bg="#2b2b2b", fg="white", insertbackground="white")
         description_text.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+
+        ttk.Label(info_frame, text="Pastebin API Key:").grid(row=3, column=0, padx=5, pady=5)
+        pastebin_api_key_entry = ttk.Entry(info_frame, show="*")  # show="*" to hide the input for security
+        pastebin_api_key_entry.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+
+        ttk.Button(info_frame, text="Get API Key", command=lambda: webbrowser.open("https://pastebin.com/doc_api")).grid(row=4, column=1, padx=5, pady=5)
 
         # create installed mods frame :3
         installed_frame = ttk.LabelFrame(modpack_window, text="Installed Mods")
         installed_frame.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
-        installed_listbox = tk.Listbox(installed_frame, selectmode=tk.MULTIPLE)
+        installed_listbox = tk.Listbox(installed_frame, selectmode=tk.MULTIPLE, bg="#2b2b2b", fg="white", selectbackground="grey", selectforeground="#2b2b2b")
         installed_listbox.pack(fill="both", expand=True, padx=5, pady=5)
 
         # create modpack mods frame :3
         modpack_frame = ttk.LabelFrame(modpack_window, text="Profile Mods")
         modpack_frame.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
 
-        modpack_listbox = tk.Listbox(modpack_frame)
+        modpack_listbox = tk.Listbox(modpack_frame, bg="#2b2b2b", fg="white", selectbackground="grey", selectforeground="#2b2b2b")
         modpack_listbox.pack(fill="both", expand=True, padx=5, pady=5)
 
         # only add non-third-party mods to the listbox :3
@@ -1082,6 +1018,8 @@ class HookLineSinkerUI:
         def save_modpack():
             name = name_entry.get().strip()
             author = author_entry.get().strip()
+            api_dev_key = pastebin_api_key_entry.get()
+            print(api_dev_key)
             description = description_text.get("1.0", tk.END).strip()
 
             if not name:
@@ -1131,7 +1069,6 @@ class HookLineSinkerUI:
 
                 # create Pastebin paste :3
                 json_data = json.dumps(modpack_info, indent=2)
-                api_dev_key = 'jOTm6BSYKBTKnFx1BUCzgFy1nIi-W9M1'
                 api_url = 'https://pastebin.com/api/api_post.php'
                 
                 data = {
@@ -2472,11 +2409,6 @@ class HookLineSinkerUI:
         ttk.Checkbutton(left_frame, text="Launch in windowed mode",
                        variable=self.windowed_mode,
                        command=self.save_windowed_mode).grid(row=1, column=0, pady=2, sticky="w")
-        
-        self.dark_mode = tk.BooleanVar(value=self.settings.get('dark_mode', False))
-        ttk.Checkbutton(left_frame, text="Dark mode",
-                       variable=self.dark_mode,
-                       command=self.toggle_dark_mode).grid(row=2, column=0, pady=2, sticky="w")
 
         # right column   :3
         right_frame = ttk.Frame(general_frame)
@@ -2499,17 +2431,13 @@ class HookLineSinkerUI:
         # hook line & sinker information :3
         info_frame = ttk.LabelFrame(settings_frame, text="HLS: Reborn Information")
         info_frame.grid(row=3, column=0, pady=10, padx=20, sticky="ew")
-        info_frame.grid_columnconfigure((0,1,2), weight=1)
+        info_frame.grid_columnconfigure((0,1), weight=1)
+        info_frame.grid_rowconfigure(2, weight=1)
 
-        # load current version :3
-        current_version = "1.0.0"
+        ttk.Button(info_frame, text="View Changelog", command=self.show_changelog).grid(row=2, column=0, pady=5, padx=5, sticky="nsew")
+        ttk.Button(info_frame, text="View Credits", command=self.show_credits).grid(row=2, column=1, pady=5, padx=5, sticky="nsew")
+                # troubleshooting options :3
 
-        latest_version = "1.0.0"
-
-        ttk.Button(info_frame, text="View Changelog", command=self.show_changelog).grid(row=2, column=1, pady=5, padx=5, sticky="ew")
-        ttk.Button(info_frame, text="View Credits", command=self.show_credits).grid(row=2, column=2, pady=5, padx=5, sticky="ew")
-
-        # troubleshooting options :3
         troubleshoot_frame = ttk.LabelFrame(settings_frame, text="Troubleshooting")
         troubleshoot_frame.grid(row=5, column=0, pady=10, padx=20, sticky="ew")
         troubleshoot_frame.grid_columnconfigure((0, 1, 2), weight=1)
@@ -4510,7 +4438,7 @@ Special Thanks:
                 "Would you like to join our new Discord now?",
                 icon='info',
             ):
-                webbrowser.open("https://discord.gg/zAdYquPx3U")
+                webbrowser.open("https://discord.gg/7HdZJZbkhw")
 
             self.settings['discord_prompt_shown2'] = True
             self.save_settings()
@@ -5280,34 +5208,14 @@ Special Thanks:
     # checks for updates to the program mods and gdweave :3
     def check_for_updates(self, silent=False):
         try:
-            # check for program update first :3
-            response = requests.get("https://hooklinesinker.lol/download/version.json")
-            version_data = response.json()
-            remote_version = version_data['version']
-            update_message = version_data.get('message', '')
-            local_version = get_version()
-
-            if remote_version != local_version:
-                message = f"A new version ({remote_version}) is available. You are currently on version {local_version}."
-                if update_message:
-                    message += f"\n\n{update_message}"
-                message += "\n\nWould you like to download the update?"
-                
-                if messagebox.askyesno("Update Available", message):
-                    webbrowser.open(f"https://hooklinesinker.lol/download/{remote_version}")
-                    self.root.destroy()
-                    sys.exit(0)
-                    return
-                else:
-                    return
-            # check for mod updates :3
+            # check for mod updates
             self.set_status_safe("Checking for mod and GDWeave updates...")
             updates_available = False
 
             if not self.installed_mods:
                 self.set_status_safe("No mods installed. Skipping mod update check.")
             else:
-                # first pass - collect all mods that need updates :3
+                # first pass - collect all mods that need updates
                 mods_to_update = []
                 for installed_mod in self.installed_mods:
                     for available_mod in self.available_mods:
@@ -5324,7 +5232,7 @@ Special Thanks:
                                 self.set_status_safe(error_message)
                             break
 
-                # if updates are available, show single prompt :3
+                # if updates are available, show single prompt
                 if mods_to_update:
                     update_message = "Updates available for the following mods:\n\n"
                     # Show first 3 mods
@@ -5348,7 +5256,7 @@ Special Thanks:
                     else:
                         return
 
-            # check for gdweave update :3
+            # check for gdweave update
             gdweave_version = self.get_gdweave_version()
             if gdweave_version != self.settings.get('gdweave_version', 'Unknown'):
                 updates_available = True

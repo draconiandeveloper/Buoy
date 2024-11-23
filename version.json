@@ -1,15 +1,13 @@
 {
-    "version": "1.0.0",
-    "message": "Major update. This version of HLS is being lead by a new team (Of 1 guy yay)",
+    "version": "1.0.1",
+    "message": "Major update. UI updates and new Discord server.",
     "changelog": [
-        "Renamed all important elements from HLS to HLS:R",
-        "Removed survey stuff",
-        "Removed server browser",
-        "Removed automatic update polling on startup and periodically",
-        "Removed all reliance on HLS' original website. Manual updates are required now",
-        "Added dark mode by default",
-        "Renamed all parts from HLS to HLS:R",
-        "Removed all reliance on Google Analytics",
-        "Reworked exe compilation method"
+        "Fixed UI funkiness from removing buttons",
+        "Changed the modpack creation to require an API key from Pastebin to be supplied.",
+        "Fixed background issue in the modpack creation UI",
+        "Fully removed all keystroke logging and tracking for the whole script.",
+        "Changed Discord invites to be accurate to the new community",
+        "Removed Misc Management section in main menu and changed it to Misc",
+        "Removed Light mode. (Why would you even choose to use that anyway?)"
     ]
 }
