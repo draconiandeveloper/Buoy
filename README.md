@@ -56,4 +56,4 @@ If you're coming from the original **HLS**, there is a tool for **importing your
 ---
 
 ## **Credits / Attribution**  
-- 👤 **Pyoid** – Original developer for *Hook, Line, and Sinker*  
+- 👤 **Pyoid** – Original developer for *Hook, Line, and Sinker*   
