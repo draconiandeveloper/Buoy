@@ -1,44 +1,59 @@
-# HLS:Reborn
+# **HLS: Reborn**  
+**Under new development!!**  
 
-Under new development!!
+**HLS: Reborn** is a **mod manager** designed for **WEBFISHING** using **GDWeave**, based on the ill-fated original *Hook, Line, and Sinker*.  
 
-HLS:Reborn is a mod manager designed for WEBFISHING using GDWeave. Based on the ill-fated original Hook, Line, and Sinker
+This fork was created to keep this application **sustained and running**, while a new mod manager is planned for development in the future.  
 
-This fork was created to keep this application sustained and running, I will be working on a new mod manager myself later on in the future.
+---
 
-## Features
-- Easy mod installation and management
-- Automatic updates for mods and the GDWeave mod loader
-- User-friendly interface for enabling/disabling mods
-- Mod configuration editing
-- Import custom mods from ZIP files or folders
-- Search functionality for available and installed mods
-- Detailed mod information display
-- One-click setup for game directory and required components
-- NO MORE USER TRACKING!!
+## **Features**  
+- 🎯 **Easy mod installation and management**  
+- 🔄 **Automatic updates** for mods and the GDWeave mod loader  
+- 🛠️ **User-friendly interface** for enabling/disabling mods  
+- ⚙️ **Mod configuration editing**  
+- 📦 **Import custom mods** from ZIP files
+- 🔍 **Search functionality** for available and installed mods  
+- 📝 **Detailed mod information display**  
+- ⚡ **One-click setup** for game directory and required components  
+- 🚫 **NO MORE USER TRACKING!!**  
 
-## Changelog going from Hook, Line, & Sinker to HLS:R
-- Renamed all important elements from HLS to HLS:R
-- Removed survey stuff
-- Removed server browser
-- Removed automatic update polling on startup and periodically
-- Removed all reliance on HLS' original website. Manual updates are required now
-- Added dark mode by default
-- Renamed all parts from HLS to HLS:R
-- Removed all reliance on Google Analytics
-- Reworked exe compilation method
+---
 
-## Installation
+## **Major Changes From Hook, Line, & Sinker to HLS:R**  
+- 🏷️ Renamed all important elements from **HLS** to **HLS:R**  
+- 🗑️ Removed **surveys**
+- 🗑️ Removed **Anonymous Usage Tracking and Google Analytics connections**  
+- 🗑️ Removed **server browser**  
+- 🗑️ Removed automatic update polling on startup and periodically  
+- 🗑️ Removed all reliance on **HLS' original website** (Manual updates are now required)  
+- 🌙 Added **dark mode** by default
+- 🛠️ Reworked **exe compilation method** (It no longer installs to your machine and can be run portable)
 
-# If you're coming from the original HLS, there is a tool for importing your old mods and settings to this version. Download the Importer.exe from the [the latest release](https://github.com/FerretPaws/HLSReborn/releases) tab. Run it just before running HLS: Reborn for the first time and all your data will be moved over. You can delete the exe after
+---
 
-Download [the latest release EXE](https://github.com/FerretPaws/HLSReborn/releases) and run it, simple as that! You'll need to go through the setup process once. Do not download the source code unless you know what you're doing.
+## **Using HLS: Reborn**  
 
-## Troubleshooting/tips
+If you're coming from the original **HLS**, there is a tool for **importing your old mods and settings** to this version.  
 
-- Do not download HLS:Reborn from the "Code" button at the top.
-- If you run into any issues, try running the program as administrator.
-- You may need to install [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) manually, I've tried to make it automatic but it's not perfect.
+1. Download the **Importer.exe** from the [latest release](https://github.com/FerretPaws/HLSReborn/releases) tab.  
+2. Run it **before launching HLS:Reborn for the first time**—your data will be transferred.  
+3. You can delete the **Importer.exe** after the process is complete.  
 
-## Credits/Attri.
-- Pyoid - Origninal developer for Hook, Line, and Sinker
+**To install HLS:Reborn:**  
+- Download the [latest release ZIP](https://github.com/FerretPaws/HLSReborn/releases), extract the .zip to anywhere you like, then run the .exe inside there. Simple as that! Just remember to keep it inside the folder it extracts from!
+- You’ll need to go through a one-time setup process.  
+
+⚠️ **Do NOT download the source code** unless you know what you’re doing.  
+
+---
+
+## **Troubleshooting / Tips**  
+
+- ❗ If you encounter any issues, try running the program as **administrator**.  
+- ⚙️ You may need to install **[.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** manually. While the installer attempts to automate this, it's not perfect.  
+
+---
+
+## **Credits / Attribution**  
+- 👤 **Pyoid** – Original developer for *Hook, Line, and Sinker*  
