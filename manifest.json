@@ -1,0 +1,9 @@
+{
+    "name": "HLSReborn",
+    "version_number": "1.0.2",
+    "website_url": "https://github.com/FerretPaws/HLSReborn",
+    "description": "A trimmed down fork of the ill-fated Hook, Line, and Sinker application for WEBFISHING mod management",
+    "dependencies": [
+
+    ]
+}
