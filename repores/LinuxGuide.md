@@ -1,4 +1,4 @@
-# How to Use HLS: Reborn on Linux
+# How to Use HLS: Reborn on Linux and Steam Deck
 
 This process has **not been tested by me**. The tests and screenshots are from **@dandestroys** on Discord. Huge thanks to them for their efforts!
 
