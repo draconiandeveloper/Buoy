@@ -5,6 +5,10 @@
 
 This fork was created to keep this application **sustained and running**, while a new mod manager is planned for development in the future.  
 
+<div align="center">
+  <img src="https://github.com/FerretPaws/HLSReborn/blob/main/repores/HLSRIcon.png?raw=true" alt="HLSR Icon" />
+</div>
+
 ---
 
 ## **Features**  
@@ -51,7 +55,8 @@ If you're coming from the original **HLS**, there is a tool for **importing your
 ## **Troubleshooting / Tips**  
 
 - ❗ If you encounter any issues, try running the program as **administrator**.  
-- ⚙️ You may need to install **[.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** manually. While the installer attempts to automate this, it's not perfect.  
+- ⚙️ You may need to install **[.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** manually. While the installer attempts to automate this, it's not perfect.
+- ⚙️ If the game runs without mods when you chose the modded run option, run WEBFISHING through Steam first and then go back to HLS:R and relaunch through there. (This is an uncommon issue)
 
 ---
 
