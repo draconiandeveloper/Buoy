@@ -27,7 +27,7 @@ This process has **not been tested by me**. The tests and screenshots are from *
 8. Click the cogwheel icon
 9. Click the Properties option 
 10. Go to Compatibility 
-11. Ensure that **`Force the use of a specific Steam Play compatibility tool`** is checked. Choose any Proton version **between 7 and 9`** from the list (Or install any you need if you don't have them)
+11. Ensure that **`Force the use of a specific Steam Play compatibility tool`** is checked. Choose any Proton version **`between 7 and 9`** from the list (Or install any you need if you don't have them)
 12. Run HLS: Reborn
 
 ---
