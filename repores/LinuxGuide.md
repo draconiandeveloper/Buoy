@@ -1,5 +1,7 @@
 # How to Use HLS: Reborn on Linux and Steam Deck
 
+## HLS: Reborn cannot be easily compiled directly on Linux but it can be run through Proton with some set-up shown below from the latest pre-compiled exe in Releases
+
 This process has **not been tested by me**. The tests and screenshots are from **@dandestroys** on Discord. Huge thanks to them for their efforts!
 
 ---
