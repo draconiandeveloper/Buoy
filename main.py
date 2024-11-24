@@ -29,7 +29,6 @@ from dotenv import load_dotenv
 from PIL import Image, ImageTk
 from tkinter import ttk, filedialog, messagebox, simpledialog, font
 import pywinstyles
-import winsound
 
 load_dotenv()
 
