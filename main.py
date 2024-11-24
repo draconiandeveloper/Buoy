@@ -683,7 +683,6 @@ class HookLineSinkerUI:
         self.create_modpacks_tab()
         self.create_game_manager_tab()
         self.create_hls_setup_tab()
-        # self.create_profile_tab() :3
         self.create_settings_tab()
         
         # initialize mod-related functions :3
@@ -988,20 +987,29 @@ class HookLineSinkerUI:
         installed_frame = ttk.LabelFrame(modpack_window, text="Installed Mods")
         installed_frame.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
-        installed_listbox = tk.Listbox(installed_frame, selectmode=tk.MULTIPLE, bg="#2b2b2b", fg="white", selectbackground="grey", selectforeground="#2b2b2b")
+        installed_listbox = tk.Listbox(installed_frame, selectmode=tk.EXTENDED, bg="#2b2b2b", fg="white", selectbackground="grey", selectforeground="#2b2b2b")
         installed_listbox.pack(fill="both", expand=True, padx=5, pady=5)
 
         # create modpack mods frame :3
         modpack_frame = ttk.LabelFrame(modpack_window, text="Profile Mods")
         modpack_frame.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
 
-        modpack_listbox = tk.Listbox(modpack_frame, bg="#2b2b2b", fg="white", selectbackground="grey", selectforeground="#2b2b2b")
+        modpack_listbox = tk.Listbox(modpack_frame, selectmode=tk.EXTENDED, bg="#2b2b2b", fg="white", selectbackground="grey", selectforeground="#2b2b2b")
         modpack_listbox.pack(fill="both", expand=True, padx=5, pady=5)
 
         # only add non-third-party mods to the listbox :3
         for mod in self.installed_mods:
             if not mod.get('third_party', False):
                 installed_listbox.insert(tk.END, mod['title'])
+
+        def add_enabled_mods_to_modpack_list():
+            # Get the currently enabled mods
+            enabled_mods = [mod['title'] for mod in self.installed_mods if mod.get('enabled', False)]
+            
+            # Add the enabled mods to the modpack list
+            for mod in enabled_mods:
+                if mod not in modpack_listbox.get(0, tk.END):
+                    modpack_listbox.insert(tk.END, mod)
 
         def add_to_modpack():
             selections = installed_listbox.curselection()
@@ -1132,6 +1140,7 @@ class HookLineSinkerUI:
 
         ttk.Button(buttons_frame, text="Add Selected", command=add_to_modpack).pack(side="left", padx=5)
         ttk.Button(buttons_frame, text="Remove Selected", command=remove_from_modpack).pack(side="left", padx=5)
+        ttk.Button(buttons_frame, text="Add Enabled Mods", command=add_enabled_mods_to_modpack_list).pack(side="left", padx=5)
         ttk.Button(buttons_frame, text="Save Profile", command=save_modpack).pack(side="left", padx=5)
         ttk.Button(buttons_frame, text="Cancel", command=modpack_window.destroy).pack(side="left", padx=5)
 
@@ -3808,22 +3817,25 @@ Special Thanks:
             editor_window.iconbitmap(icon_path)
 
         # create main container :3
-        main_frame = ttk.Frame(editor_window, padding="10")
+        editor_window.configure(bg="#2b2b2b")  # Set black background for the window
+
+        main_frame = ttk.Frame(editor_window, padding="10", style="MainFrame.TFrame")
         main_frame.pack(fill='both', expand=True)
 
         # create header with mod name :3
-        header_frame = ttk.Frame(main_frame)
+        header_frame = ttk.Frame(main_frame, style="HeaderFrame.TFrame")
         header_frame.pack(fill='x', pady=(0, 10))
-        ttk.Label(header_frame, text=f"Editing configuration for {mod_name}", font=('TkDefaultFont', 10, 'bold')).pack(side='left')
+        ttk.Label(header_frame, text=f"Editing configuration for {mod_name}",
+                font=('TkDefaultFont', 10, 'bold'), style="HeaderLabel.TLabel").pack(side='left')
 
         # create scrollable content area :3
-        content_frame = ttk.Frame(main_frame)
+        content_frame = ttk.Frame(main_frame, style="ContentFrame.TFrame")
         content_frame.pack(fill='both', expand=True)
 
         # create canvas and scrollbar :3
-        canvas = tk.Canvas(content_frame)
-        scrollbar = ttk.Scrollbar(content_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
+        canvas = tk.Canvas(content_frame, bg="#2b2b2b", highlightbackground="#FFFFFF", highlightthickness=1)
+        scrollbar = ttk.Scrollbar(content_frame, orient="vertical", command=canvas.yview, style="Vertical.TScrollbar")
+        scrollable_frame = ttk.Frame(canvas, style="ScrollableFrame.TFrame")
 
         # configure scrolling :3
         scrollable_frame.bind(
@@ -3837,6 +3849,21 @@ Special Thanks:
         # pack scrollbar first so it appears on the right :3
         scrollbar.pack(side="right", fill="y")
         canvas.pack(side="left", fill="both", expand=True)
+
+        # Apply custom styles
+        style = ttk.Style()
+        style.configure("MainFrame.TFrame", background="#2b2b2b")
+        style.configure("HeaderFrame.TFrame", background="#2b2b2b")
+        style.configure("ContentFrame.TFrame", background="#2b2b2b")
+        style.configure("ScrollableFrame.TFrame", background="#2b2b2b")
+        style.configure("Vertical.TScrollbar", background="#2b2b2b", troughcolor="#2b2b2b", arrowcolor="#FFFFFF")
+        style.configure("HeaderLabel.TLabel", background="#2b2b2b", foreground="#FFFFFF", font=('TkDefaultFont', 10, 'bold'))
+
+        # Explicitly set text colors in ttk labels used within the scrollable frame
+        for widget in scrollable_frame.winfo_children():
+            if isinstance(widget, ttk.Label):
+                widget.configure(style="HeaderLabel.TLabel")
+
 
         # enable mousewheel scrolling :3
         def on_mousewheel(event):

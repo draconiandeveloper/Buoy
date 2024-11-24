@@ -1,13 +1,9 @@
 {
-    "version": "1.0.1",
-    "message": "Major update. UI updates and new Discord server.",
+    "version": "1.0.2",
+    "message": "Minor Update. Fixed some bugs, added a thing",
     "changelog": [
-        "Fixed UI funkiness from removing buttons",
-        "Changed the modpack creation to require an API key from Pastebin to be supplied.",
-        "Fixed background issue in the modpack creation UI",
-        "Fully removed all keystroke logging and tracking for the whole script.",
-        "Changed Discord invites to be accurate to the new community",
-        "Removed Misc Management section in main menu and changed it to Misc",
-        "Removed Light mode. (Why would you even choose to use that anyway?)"
+        "Added function to Modpack creation to automatically add all of your currently enabled mods to the list",
+        "Fixed config menu's weird UI bug where it had a white background",
+        "Added shift-selecting to Modpack creation system for easier selection of groups of mods"
     ]
 }

@@ -4,7 +4,7 @@ import sys
 
 def compile_with_pyinstaller():
     # Project directory and paths
-    project_dir = r"C:\Users\Legacy\Desktop\HLSReborn"
+    project_dir = r"C:\Users\Legacy\Desktop\HLSReborn/Scripts"
     script_file = os.path.join(project_dir, "main.py")
     icon_path = os.path.join(project_dir, "images", "icon.ico")
     images_dir = os.path.join(project_dir, "images")
