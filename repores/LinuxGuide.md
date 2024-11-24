@@ -38,7 +38,7 @@ This process has **not been tested by me**. The tests and screenshots are from *
 </div>
 
 13. Go to the HLS: Reborn Setup tab
-14. Go to Steam and open choose to Browse local files
+14. Go to Steam and choose to Browse local files
 15. Copy the path to the directory that holds your WEBFISHING data
 16. Choose Browse in HLS: Reborn Setup tab
 17. Paste the path to your game directory into the File Path input
