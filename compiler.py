@@ -23,7 +23,7 @@ def compile_with_pyinstaller():
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--noconsole",
-        f"--add-data={images_dir};images",
+        f"--add-data={images_dir}:images",
         f"--add-data={version_file};.",
         f"--icon={icon_path}",
         "--name", output_name,
