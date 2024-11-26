@@ -53,6 +53,35 @@ This process has **not been tested by me**. The tests and screenshots are from *
 
 ---
 
+## To get the Save Manager working, follow this guide:
+
+Follow these steps to configure the save manager to work with your setup:
+
+1. **Navigate to the target directory:**  
+   Locate the directory where Steam stores its compatdata. Use the following path, replacing `[HSLR_STEAM_ID]` with your app's unique Steam ID (note: Steam auto-generates these IDs for non-Steam games, so they will differ for each installation):  
+   ```~/.local/share/Steam/steamapps/compatdata/[HSLR_STEAM_ID]/pfx/drive_c/users/steamuser/AppData/Roaming```
+
+2. **Determine the Godot directory location:**  
+   Find the Godot folder in the following path:  
+   ```~/.local/share/Steam/steamapps/compatdata/3146520/pfx/drive_c/users/steamuser/AppData/Roaming```
+
+3. **Create a symbolic link:**  
+   Symlink the Godot folder from the path above (3146520) to the directory corresponding to your app's `[HSLR_STEAM_ID]`. Use the following command, replacing `[HSLR_STEAM_ID]` as needed:  
+   ```ln -s ~/.local/share/Steam/steamapps/compatdata/3146520/pfx/drive_c/users/steamuser/AppData/Roaming/Godot```
+         ```~/.local/share/Steam/steamapps/compatdata/[HSLR_STEAM_ID]/pfx/drive_c/users/steamuser/AppData/Roaming/Godot```
+
+4. **Verify the symlink:**  
+   Confirm that the symlink was created successfully by navigating to the `[HSLR_STEAM_ID]` directory:  
+   ```cd ~/.local/share/Steam/steamapps/compatdata/[HSLR_STEAM_ID]/pfx/drive_c/users/steamuser/AppData/Roaming```
+   Use ls -l to verify the Godot link points to the correct location.
+
+5. **Flatpak users:**  
+   If you are using Steam via Flatpak, note that the directory structure will differ. The equivalent path for Flatpak installations is typically:  
+   ```~/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/compatdata/```
+
+Once the symlink is correctly established, the save manager should function as expected. 🎉
+
+
 ### Tips
 - If you encounter any issues, visit the [Repository](https://github.com/FerretPaws/HLSReborn) or ask in the **Discord** for help!
 
