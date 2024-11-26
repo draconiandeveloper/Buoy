@@ -40,7 +40,7 @@ This fork was created to keep this application **sustained and running**, while 
 
 If you're coming from the original **HLS**, there is a tool for **importing your old mods and settings** to this version.  
 
-1. Download the **Importer.exe** from the [latest release](https://github.com/FerretPaws/HLSReborn/releases) tab.  
+1. Download the **HLSRImporter.exe** from the [latest release](https://github.com/FerretPaws/HLSReborn/releases) tab.  
 2. Run it **before launching HLS:Reborn for the first time**—your data will be transferred.  
 3. You can delete the **Importer.exe** after the process is complete.  
 
@@ -49,6 +49,9 @@ If you're coming from the original **HLS**, there is a tool for **importing your
 - You’ll need to go through a one-time setup process.  
 
 ⚠️ **Do NOT download the source code** unless you know what you’re doing.  
+
+## **USING HLSR ON LINUX OR STEAM DECK**
+- Follow the guide **[here](https://github.com/FerretPaws/HLSReborn/blob/main/repores/LinuxGuide.md)**
 
 ---
 

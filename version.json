@@ -1,9 +1,13 @@
 {
-    "version": "1.0.2",
-    "message": "Minor Update. Fixed some bugs, added a thing",
+    "version": "1.0.3",
+    "message": "Major Update. Trimmed code by nearly half and other features",
     "changelog": [
-        "Added function to Modpack creation to automatically add all of your currently enabled mods to the list",
-        "Fixed config menu's weird UI bug where it had a white background",
-        "Added shift-selecting to Modpack creation system for easier selection of groups of mods"
+        "Trimmed down over 3000 lines of unnecessary code",
+        "Changed compiler to compile with a better name.",
+        "Added Linux Guide to README.md",
+        "Changed UI in Config menus for better fitting in them.",
+        "Added GUI to Mod Updates window to allow user to select which mods to update.",
+        "Fixed UI bug on Save Slot area.",
+        "Fixed UI of log display windows"
     ]
 }
