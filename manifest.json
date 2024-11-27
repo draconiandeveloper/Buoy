@@ -1,8 +1,8 @@
 {
     "name": "Buoy",
-    "version_number": "1.0.3",
-    "website_url": "https://github.com/FerretPaws/HLSReborn",
-    "description": "A trimmed down fork of the ill-fated Hook, Line, and Sinker application for WEBFISHING mod management",
+    "version_number": "1.0.0",
+    "website_url": "https://github.com/FerretPaws/Buoy",
+    "description": "A mod manager designed for WEBFISHING using Python!",
     "dependencies": [
 
     ]
