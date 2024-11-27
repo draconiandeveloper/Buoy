@@ -92,7 +92,7 @@ class HookLineSinkerUI:
         self.dark_mode_colors = {'bg': '#2b2b2b', 'fg': '#ffffff', 'select_bg': '#404040', 'select_fg': '#ffffff', 'button_bg': '#404040', 'button_fg': '#ffffff', 'entry_bg': '#333333', 'entry_fg': '#ffffff', 'frame_bg': '#1e1e1e', 'frame_fg': '#ffffff', 'menu_bg': '#2b2b2b', 'menu_fg': '#ffffff', 'tab_bg': '#333333', 'tab_fg': '#ffffff', 'tab_selected_bg': '#404040', 'tab_selected_fg': '#ffffff', 'scrollbar_bg': '#404040', 'scrollbar_fg': '#666666', 'highlight_bg': '#3d6a99', 'highlight_fg': '#ffffff', 'error_bg': '#992e2e', 'error_fg': '#ffffff', 'success_bg': '#2e9959', 'success_fg': '#ffffff'}
         self.dark_mode = tk.BooleanVar(value=self.settings.get('dark_mode', True))
         version = get_version()
-        self.root.title(f'HLS: Reborn v{version}')
+        self.root.title(f'Buoy v{version}')
         if not self.settings.get('windowed_mode', True):
             self.root.state('zoomed')
         else:
@@ -226,7 +226,7 @@ class HookLineSinkerUI:
         self.settings['dark_mode'] = is_dark
         self.save_settings()
         if show_restart_prompt:
-            messagebox.showinfo('Restart Required', 'A restart is required for the theme change to take full effect. Press OK to close HLS:R. Please manually start it back up.')
+            messagebox.showinfo('Restart Required', 'A restart is required for the theme change to take full effect. Press OK to close Buoy. Please manually start it back up.')
             self.root.destroy()
 
     def setup_logging(self):
@@ -235,7 +235,7 @@ class HookLineSinkerUI:
         error_log = os.path.join(self.app_data_dir, 'latestlog.txt')
         with open(error_log, 'w') as f:
             f.write('=' * 80 + '\n')
-            f.write('HLS: Reborn Error Log\n')
+            f.write('Buoy Error Log\n')
             f.write('This log only contains errors and important messages\n')
             f.write('=' * 80 + '\n\n')
         error_handler = logging.FileHandler(error_log, mode='a')
@@ -244,7 +244,7 @@ class HookLineSinkerUI:
         full_log = os.path.join(self.app_data_dir, 'fulllatestlog.txt')
         with open(full_log, 'w') as f:
             f.write('=' * 80 + '\n')
-            f.write('HLS: Reborn Full Debug Log\n')
+            f.write('Buoy Full Debug Log\n')
             f.write('This log contains all debug messages and program activity\n')
             f.write('=' * 80 + '\n\n')
         full_handler = logging.FileHandler(full_log, mode='a')
@@ -263,7 +263,7 @@ class HookLineSinkerUI:
             with open(log_path, 'r') as f:
                 log_content = f.read()
             log_window = tk.Toplevel(self.root)
-            log_window.title('HLS:R Log')
+            log_window.title('Buoy Log')
             log_window.geometry('800x600')
             log_window.configure(background=self.dark_mode_colors['bg'])
             icon_path = get_resource_path('images/icon.ico')
@@ -298,7 +298,7 @@ class HookLineSinkerUI:
             with open(log_path, 'r') as f:
                 log_content = f.read()
             log_window = tk.Toplevel(self.root)
-            log_window.title('Full HLS:R Log')
+            log_window.title('Full Buoy Log')
             log_window.geometry('800x600')
             log_window.configure(background=self.dark_mode_colors['bg']) 
             icon_path = get_resource_path('images/icon.ico')
@@ -332,7 +332,7 @@ class HookLineSinkerUI:
         if (last_update_version := self.settings.get('last_update_version')):
             last_update_version = version.parse(last_update_version)
             if current_version > last_update_version:
-                messagebox.showinfo('Update Complete', f'HLS: Reborn has been updated to version {current_version}.')
+                messagebox.showinfo('Update Complete', f'Buoy has been updated to version {current_version}.')
                 self.settings['last_update_version'] = str(current_version)
                 self.save_settings()
         else:
@@ -673,7 +673,7 @@ class HookLineSinkerUI:
                         pass
                 json_data = json.dumps(modpack_info, indent=2)
                 api_url = 'https://pastebin.com/api/api_post.php'
-                data = {'api_dev_key': api_dev_key, 'api_option': 'paste', 'api_paste_code': json_data, 'api_paste_name': f'HLS:R Mod Profile - {name}', 'api_paste_format': 'json', 'api_paste_private': '0', 'api_paste_expire_date': 'N'}
+                data = {'api_dev_key': api_dev_key, 'api_option': 'paste', 'api_paste_code': json_data, 'api_paste_name': f'Buoy Mod Profile - {name}', 'api_paste_format': 'json', 'api_paste_private': '0', 'api_paste_expire_date': 'N'}
                 response = requests.post(api_url, data=data)
                 if response.status_code == 200 and response.text.startswith('https://pastebin.com/'):
                     paste_id = response.text.split('/')[-1]
@@ -1109,7 +1109,7 @@ class HookLineSinkerUI:
     def launch_modded(self):
         """Launch the game with mods enabled"""
         if not self.check_setup():
-            messagebox.showinfo('Setup Required', 'Please follow all the steps for installation in the HLS:R Setup tab.')
+            messagebox.showinfo('Setup Required', 'Please follow all the steps for installation in the Buoy Setup tab.')
             self.notebook.select(3)
             return
         if not self.settings.get('game_path'):
@@ -1130,7 +1130,7 @@ class HookLineSinkerUI:
     def launch_vanilla(self):
         """Launch the game without mods"""
         if not self.check_setup():
-            messagebox.showinfo('Setup Required', 'Please follow all the steps for installation in the HLS:R Setup tab.')
+            messagebox.showinfo('Setup Required', 'Please follow all the steps for installation in the Buoy Setup tab.')
             self.notebook.select(3)
             return
         if not self.settings.get('game_path'):
@@ -1271,7 +1271,7 @@ class HookLineSinkerUI:
         gdweave_path = os.path.join(self.settings.get('game_path', ''), 'GDWeave', 'Mods')
         has_old_mods = os.path.exists(gdweave_path) and os.listdir(gdweave_path)
         if has_old_mods:
-            message = "We've detected you've previously used HLS: Reborn before the Thunderstore update. To use HLS: Reborn with the new version, we must completely clear your existing mods to work with the new system.\n\nDon't worry - all your saves, backups, settings, and mod configurations will transfer over, only the mods need to be cleared.\n\nPress Yes to clear all mods and continue, or No to exit and backup your mods first.\n\nWarning: This will delete all currently installed mods!"
+            message = "We've detected you've previously used Buoy before the Thunderstore update. To use Buoy with the new version, we must completely clear your existing mods to work with the new system.\n\nDon't worry - all your saves, backups, settings, and mod configurations will transfer over, only the mods need to be cleared.\n\nPress Yes to clear all mods and continue, or No to exit and backup your mods first.\n\nWarning: This will delete all currently installed mods!"
             if messagebox.askyesno('Migration Required', message):
                 try:
                     gdweave_mods_dir = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods')
@@ -1377,7 +1377,7 @@ class HookLineSinkerUI:
                 migrated_save_path = os.path.join(save_dir, 'webfishing_migrated_data.save')
                 try:
                     shutil.copy2(backup_path, migrated_save_path)
-                    messagebox.showinfo('Success', 'Old save file has been restored. Please start the game to complete the migration process. You probably want to restart HLS:R after the game starts too.')
+                    messagebox.showinfo('Success', 'Old save file has been restored. Please start the game to complete the migration process. You probably want to restart Buoy after the game starts too.')
                     self.set_status('Old save file restored - start game to complete migration')
                     self.refresh_backup_list()
                 except Exception as e:
@@ -1432,12 +1432,12 @@ class HookLineSinkerUI:
 
     def create_hls_setup_tab(self):
         setup_frame = ttk.Frame(self.notebook)
-        self.notebook.add(setup_frame, text='HLS:R Setup')
+        self.notebook.add(setup_frame, text='Buoy Setup')
         setup_frame.grid_columnconfigure(0, weight=1)
         setup_frame.grid_rowconfigure(8, weight=1)
-        title_label = ttk.Label(setup_frame, text='HLS: Reborn Setup', font=('Helvetica', 16, 'bold'))
+        title_label = ttk.Label(setup_frame, text='Buoy Setup', font=('Helvetica', 16, 'bold'))
         title_label.grid(row=0, column=0, pady=(20, 5), padx=20, sticky='w')
-        instruction_label = ttk.Label(setup_frame, text='Complete the steps below to start using HLS: Reborn', font=('Helvetica', 10, 'italic'))
+        instruction_label = ttk.Label(setup_frame, text='Complete the steps below to start using Buoy', font=('Helvetica', 10, 'italic'))
         instruction_label.grid(row=1, column=0, pady=(0, 10), padx=20, sticky='w')
         step1_frame = ttk.LabelFrame(setup_frame, text='Step 1: Set Game Installation Path')
         step1_frame.grid(row=2, column=0, pady=10, padx=20, sticky='ew')
@@ -1558,15 +1558,15 @@ class HookLineSinkerUI:
 
     def create_settings_tab(self):
         settings_frame = ttk.Frame(self.notebook)
-        self.notebook.add(settings_frame, text='HLS:R Settings')
+        self.notebook.add(settings_frame, text='Buoy Settings')
         settings_frame.grid_columnconfigure(0, weight=1)
         settings_frame.grid_rowconfigure(7, weight=1)
         title_frame = ttk.Frame(settings_frame)
         title_frame.grid(row=0, column=0, pady=(20, 0), padx=20, sticky='ew')
         title_frame.grid_columnconfigure(1, weight=1)
-        title_label = ttk.Label(title_frame, text='HLS: Reborn Settings', font=('Helvetica', 16, 'bold'))
+        title_label = ttk.Label(title_frame, text='Buoy Settings', font=('Helvetica', 16, 'bold'))
         title_label.grid(row=0, column=0, sticky='w')
-        subtitle_label = ttk.Label(settings_frame, text='Customize your HLS: Reborn experience', font=('Helvetica', 10, 'italic'))
+        subtitle_label = ttk.Label(settings_frame, text='Customize your Buoy experience', font=('Helvetica', 10, 'italic'))
         subtitle_label.grid(row=1, column=0, pady=(0, 10), padx=20, sticky='w')
         general_frame = ttk.LabelFrame(settings_frame, text='General Settings')
         general_frame.grid(row=2, column=0, pady=10, padx=20, sticky='ew')
@@ -1586,7 +1586,7 @@ class HookLineSinkerUI:
         update_frame = ttk.Frame(general_frame)
         update_frame.grid(row=4, column=0, columnspan=2, pady=5, padx=5, sticky='w')
         update_frame.grid_columnconfigure(1, weight=1)
-        info_frame = ttk.LabelFrame(settings_frame, text='HLS: Reborn Information')
+        info_frame = ttk.LabelFrame(settings_frame, text='Buoy Information')
         info_frame.grid(row=3, column=0, pady=10, padx=20, sticky='ew')
         info_frame.grid_columnconfigure((0, 1), weight=1)
         info_frame.grid_rowconfigure(2, weight=1)
@@ -1604,11 +1604,11 @@ class HookLineSinkerUI:
         self.toggle_gdweave_button = ttk.Button(troubleshoot_frame, text='   ', command=self.toggle_gdweave, state='disabled')
         self.toggle_gdweave_button.grid(row=2, column=0, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Clear GDWeave Mods', command=self.clear_gdweave_mods).grid(row=2, column=1, pady=5, padx=5, sticky='ew')
-        ttk.Button(troubleshoot_frame, text='Clear HLS:R Mods', command=self.clear_hls_mods).grid(row=2, column=2, pady=5, padx=5, sticky='ew')
+        ttk.Button(troubleshoot_frame, text='Clear Buoy Mods', command=self.clear_hls_mods).grid(row=2, column=2, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Open GDWeave Log', command=self.open_gdweave_log).grid(row=3, column=0, pady=5, padx=5, sticky='ew')
-        ttk.Button(troubleshoot_frame, text='Open HLS:R Log', command=self.open_latest_log).grid(row=3, column=1, pady=5, padx=5, sticky='ew')
-        ttk.Button(troubleshoot_frame, text='Open Full HLS:R Log', command=self.open_full_log).grid(row=3, column=2, pady=5, padx=5, sticky='ew')
-        ttk.Button(troubleshoot_frame, text='Open HLS:R Folder', command=self.open_hls_folder).grid(row=4, column=0, pady=5, padx=5, sticky='ew')
+        ttk.Button(troubleshoot_frame, text='Open Buoy Log', command=self.open_latest_log).grid(row=3, column=1, pady=5, padx=5, sticky='ew')
+        ttk.Button(troubleshoot_frame, text='Open Full Buoy Log', command=self.open_full_log).grid(row=3, column=2, pady=5, padx=5, sticky='ew')
+        ttk.Button(troubleshoot_frame, text='Open Buoy Folder', command=self.open_hls_folder).grid(row=4, column=0, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Open GDWeave Folder', command=self.open_gdweave_folder).grid(row=4, column=1, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Clear Temp Folder', command=self.delete_temp_files).grid(row=4, column=2, pady=5, padx=5, sticky='ew')
         self.settings_status = ttk.Label(settings_frame, text='', font=('Helvetica', 12))
@@ -1620,7 +1620,7 @@ class HookLineSinkerUI:
         self.save_settings()
 
     def generate_support_info(self):
-        info = f'```\nGenerated with HLS:R (v{get_version()}) Quick Support\n'
+        info = f'```\nGenerated with Buoy (v{get_version()}) Quick Support\n'
         info += '============================\nInstalled Mods:\n'
         for mod in self.installed_mods:
             third_party = ' (Third-Party)' if mod.get('third_party', False) else ''
@@ -1636,20 +1636,20 @@ class HookLineSinkerUI:
                 info += 'Error reading GDWeave log'
         else:
             info += 'No log found'
-        info += '\n============================\nHLS:R Log:\n'
+        info += '\n============================\nBuoy Log:\n'
         hls_log_path = os.path.join(self.app_data_dir, 'latestlog.txt')
         if os.path.exists(hls_log_path):
             try:
                 with open(hls_log_path, 'r') as f:
                     lines = f.readlines()[5:]
                     log_content = ''.join(lines).strip()
-                    info += log_content if log_content else 'No critical errors found in HLS:R log'
+                    info += log_content if log_content else 'No critical errors found in Buoy log'
             except Exception:
-                info += 'Error reading HLS:R log'
+                info += 'Error reading Buoy log'
         else:
             info += 'No log found'
         info += '\n============================\nSystem Information:\n'
-        info += f'HLS:R Version: v{get_version()}\n'
+        info += f'Buoy Version: v{get_version()}\n'
         info += f"GDWeave Version: {self.settings.get('gdweave_version', 'Unknown')}\n"
         info += f'OS: {platform.system()} {platform.release()}\n'
         info += f'Python: v{platform.python_version()}\n'
@@ -1664,7 +1664,7 @@ class HookLineSinkerUI:
         messagebox.showinfo('Success', 'Support information has been copied to your clipboard.\nYou can now paste this in Discord for support.')
 
     def show_credits(self):
-        credits_text = 'Big thank you to the following people for their contributions to HLS: Reborn!\n\nDevelopment:\n• Pyoid - Creator of the orginal HLS:\n• NotNite - Creator of GDWeave\n• Paws - Developer and maintainer of HLS:R\n\nHLS:R Supporters:\n• @pot_exe - Created HLS:R icon \n\nSpecial Thanks:\n• All mod creators for their contributions\n• You for using HLS: Reborn!'
+        credits_text = 'Big thank you to the following people for their contributions to Buoy!\n\nDevelopment:\n• Paws - Developer and maintainer of Buoy\n\nBuoy Supporters:\n• @.the_blue - Created Buoy icon \n\nSpecial Thanks:\n• All mod creators for their contributions\n• You for using Buoy!'
         messagebox.showinfo('Credits', credits_text)
 
     def show_changelog(self):
@@ -1855,7 +1855,7 @@ class HookLineSinkerUI:
                 self.set_status('Download complete.')
                 subprocess.Popen([temp_file_path, '/norestart'])
                 self.set_status('Installer launched. Please follow the installation prompts.')
-                messagebox.showinfo('Installation Started', 'The .NET installer has been launched. Please follow the installation prompts. After installation, please restart HLS: Reborn.')
+                messagebox.showinfo('Installation Started', 'The .NET installer has been launched. Please follow the installation prompts. After installation, please restart Buoy.')
             except Exception as e:
                 error_message = f'Failed to download or install .NET: {str(e)}'
                 self.set_status(error_message)
@@ -2330,7 +2330,7 @@ class HookLineSinkerUI:
             canvas.yview_scroll(int(-1 * (event.delta / 120)), 'units')
         canvas.bind_all('<MouseWheel>', _on_mousewheel)
         help_frame.grid_rowconfigure(2, weight=1)
-        help_items = [('1. Install .NET 8.0 SDK Manually', "If you're having issues with .NET:\n- Visit the .NET Download Page\n- Download and install the .NET 8.0 SDK", 'https://dotnet.microsoft.com/download'), ('2. Install GDWeave Manually', 'If automatic GDWeave installation fails:\n- Go to GDWeave Releases\n- Download the latest GDWeave.zip\n- Extract it to your WEBFISHING game directory', 'https://github.com/NotNite/GDWeave/releases'), ('3. Installing External Mods', "For mods not listed in our repository:\n- Use the 'Import ZIP Mod' feature in the Mod Manager tab\n- Select the .zip file of the mod you want to install\n- The mod will be automatically imported and installed", None), ('4. Run as Administrator (Windows)', "If you're having permission issues on Windows:\n- Right-click on HLS: Reborn executable\n- Select 'Run as administrator'", None), ('5. Verify Game Files', "If mods aren't working:\n- Verify your game files through Steam\n- Reinstall GDWeave", None), ('6. Check Antivirus Software', 'Your antivirus might be blocking HLS: Reborn or mods:\n- Add an exception for the HLS: Reborn directory\n- Add an exception for your WEBFISHING game directory', None), ('7. Linux-Specific Issues', "If you're on Linux and having problems:\n- Ensure you have the necessary dependencies installed (e.g., mono-complete)\n- Check if you need to run the game with a specific command or script\n- Make sure you have the required permissions to access game files", None)]
+        help_items = [('1. Install .NET 8.0 SDK Manually', "If you're having issues with .NET:\n- Visit the .NET Download Page\n- Download and install the .NET 8.0 SDK", 'https://dotnet.microsoft.com/download'), ('2. Install GDWeave Manually', 'If automatic GDWeave installation fails:\n- Go to GDWeave Releases\n- Download the latest GDWeave.zip\n- Extract it to your WEBFISHING game directory', 'https://github.com/NotNite/GDWeave/releases'), ('3. Installing External Mods', "For mods not listed in our repository:\n- Use the 'Import ZIP Mod' feature in the Mod Manager tab\n- Select the .zip file of the mod you want to install\n- The mod will be automatically imported and installed", None), ('4. Run as Administrator (Windows)', "If you're having permission issues on Windows:\n- Right-click on Buoy executable\n- Select 'Run as administrator'", None), ('5. Verify Game Files', "If mods aren't working:\n- Verify your game files through Steam\n- Reinstall GDWeave", None), ('6. Check Antivirus Software', 'Your antivirus might be blocking Buoy or mods:\n- Add an exception for the Buoy directory\n- Add an exception for your WEBFISHING game directory', None), ('7. Linux-Specific Issues', "If you're on Linux and having problems:\n- Ensure you have the necessary dependencies installed (e.g., mono-complete)\n- Check if you need to run the game with a specific command or script\n- Make sure you have the required permissions to access game files", None)]
         for i, (title, content, link) in enumerate(help_items):
             item_frame = ttk.Frame(scrollable_frame)
             item_frame.grid(row=i, column=0, sticky='ew', padx=10, pady=5)
@@ -2427,7 +2427,7 @@ class HookLineSinkerUI:
             self.set_status('GDWeave mods folder not found.')
 
     def clear_hls_mods(self):
-        if not messagebox.askyesno('Confirm Clear', 'Are you sure you want to remove all mods managed by HLS: Reborn? This action cannot be undone.'):
+        if not messagebox.askyesno('Confirm Clear', 'Are you sure you want to remove all mods managed by Buoy? This action cannot be undone.'):
             return
         try:
             for item in os.listdir(self.mods_dir):
@@ -2439,9 +2439,9 @@ class HookLineSinkerUI:
             self.mod_cache = {}
             self.save_mod_cache()
             self.refresh_mod_lists()
-            self.set_status('All HLS: Reborn managed mods and cache have been cleared.')
+            self.set_status('All Buoy managed mods and cache have been cleared.')
         except Exception as e:
-            self.set_status(f'Error clearing HLS:R mods: {str(e)}')
+            self.set_status(f'Error clearing Buoy mods: {str(e)}')
 
     def process_gui_queue(self):
         try:
@@ -2965,7 +2965,7 @@ class HookLineSinkerUI:
 
     def check_setup(self):
         if not self.settings.get('game_path') or not os.path.exists(self.settings.get('game_path')):
-            messagebox.showinfo('Setup Required', 'Please follow all the steps for installation in the HLS:R Setup tab.')
+            messagebox.showinfo('Setup Required', 'Please follow all the steps for installation in the Buoy Setup tab.')
             return False
         return True
 
@@ -3024,7 +3024,7 @@ class HookLineSinkerUI:
 
     def show_discord_prompt(self):
         if not self.settings.get('discord_prompt_shown2', False):
-            if (response := messagebox.askyesno('Join Our Discord Community', "Welcome to HLS: Reborn!\n\nWe have a new Discord server! Even if you were in the old one, you'll want to join this new community for:\n• Troubleshooting assistance\n• Latest updates and announcements\n• Mod discussions and sharing\n• Direct support from the developer\n\nWould you like to join our new Discord now?", icon='info')):
+            if (response := messagebox.askyesno('Join Our Discord Community', "Welcome to Buoy!\n\nWe have a new Discord server! Even if you were in the old one, you'll want to join this new community for:\n• Troubleshooting assistance\n• Latest updates and announcements\n• Mod discussions and sharing\n• Direct support from the developer\n\nWould you like to join our new Discord now?", icon='info')):
                 webbrowser.open('https://discord.gg/7HdZJZbkhw')
             self.settings['discord_prompt_shown2'] = True
             self.save_settings()

@@ -27,7 +27,7 @@ def compile_with_pyinstaller():
 
     version = get_version(version_file)
     sanitized_version = version.replace(" ", "_").replace("/", "_")
-    output_name = f"HLSReborn_v{sanitized_version}"
+    output_name = f"Buoy_v{sanitized_version}"
 
     # Command for PyInstaller with corrected path formats for Windows
     command = [
