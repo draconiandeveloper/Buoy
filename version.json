@@ -1,14 +1,7 @@
 {
-    "version": "1.0.1",
+    "version": "1.0.2",
     "message": "Welcome to Buoy!",
     "changelog": [
-        "Removed more unused code",
-        "Fixed version selection screen UI",
-        "Fixed parts of the dark mode function",
-        "GDWeave install now brings default `manifest.json` to hopefully stop some issues",
-        "Added JSON exporting and importing for mod profiles (Pastebin API Key not required)",
-        "Fixed config saving and default restoration",
-        "Added server browser (WIP and inaccessible for now)",
-        "Sanitized some code"
+        "Fixed bug when refreshing the mod list that caused any re-enabled mods to create 3rd party duplicates"
     ]
 }

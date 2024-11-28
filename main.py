@@ -14,9 +14,8 @@ import traceback
 import webbrowser
 import zipfile
 from urllib.parse import urlparse
-import argparse
 from packaging import version
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import logging
 import uuid
 import appdirs
@@ -24,8 +23,7 @@ import requests
 import tkinter as tk
 from dotenv import load_dotenv
 from PIL import Image, ImageTk
-from tkinter import ttk, filedialog, messagebox, simpledialog, font
-import pywinstyles
+from tkinter import ttk, filedialog, messagebox, simpledialog
 load_dotenv()
 
 def get_resource_path(filename):
@@ -1061,7 +1059,14 @@ class BuoyUI:
                 continue
             if 'Modpacks' in mod.get('categories', []) and selected_category != 'Modpacks':
                 continue
-            if search_text and (not (search_text in mod['title'].lower() or search_text in mod.get('author', '').lower() or search_text in mod.get('description', '').lower())):
+            if search_text and not any(
+                search_text in field.lower()
+                for field in [
+                    mod['title'], 
+                    mod.get('author', ''), 
+                    mod.get('description', '')
+                ]
+            ):
                 continue
             if selected_category != 'All' and selected_category not in mod.get('categories', []):
                 continue
@@ -1081,57 +1086,60 @@ class BuoyUI:
             display_title = self.get_display_name(mod['title'])
             self.available_listbox.insert(tk.END, display_title)
 
+
     def check_for_duplicate_mods(self):
         mod_ids = {}
         mod_titles = {}
         duplicates = []
         processed_duplicates = set()
-
-        def check_mod(mod_info_path):
-            with open(mod_info_path, 'r') as f:
-                mod_info = json.load(f)
-                mod_id = mod_info.get('id')
-                mod_title = mod_info.get('title')
-                mod_version = mod_info.get('version', 'Unknown')
-                return mod_id, mod_title, mod_version
-
-        def process_duplicate(mod_info_path, mod_id=None, mod_title=None):
-            if mod_id and mod_id in mod_ids and mod_id not in processed_duplicates:
-                duplicates.append((mod_ids[mod_id], mod_info_path, mod_id, mod_title, mod_version))
-                processed_duplicates.add(mod_id)
-            elif mod_title and mod_title in mod_titles and mod_title not in processed_duplicates:
-                duplicates.append((mod_titles[mod_title], mod_info_path, mod_title, mod_id, mod_version))
-                processed_duplicates.add(mod_title)
-
-        # Check mods in main directory
         for mod_folder in os.listdir(self.mods_dir):
             mod_info_path = os.path.join(self.mods_dir, mod_folder, 'mod_info.json')
             if os.path.exists(mod_info_path):
-                mod_id, mod_title, mod_version = check_mod(mod_info_path)
-                if mod_id:
-                    process_duplicate(mod_info_path, mod_id=mod_id)
-                if mod_title:
-                    process_duplicate(mod_info_path, mod_title=mod_title)
-
-        # Check mods in 3rd party directory
+                with open(mod_info_path, 'r') as f:
+                    mod_info = json.load(f)
+                    mod_id = mod_info.get('id')
+                    mod_title = mod_info.get('title')
+                    mod_version = mod_info.get('version', 'Unknown')
+                    if mod_id:
+                        if mod_id in mod_ids and mod_id not in processed_duplicates:
+                            duplicates.append((mod_ids[mod_id], mod_info_path, mod_id, mod_title, mod_version))
+                            processed_duplicates.add(mod_id)
+                        else:
+                            mod_ids[mod_id] = mod_info_path
+                    if mod_title:
+                        if mod_title in mod_titles and mod_title not in processed_duplicates:
+                            duplicates.append((mod_titles[mod_title], mod_info_path, mod_title, mod_id, mod_version))
+                            processed_duplicates.add(mod_title)
+                        else:
+                            mod_titles[mod_title] = mod_info_path
         third_party_mods_dir = os.path.join(self.mods_dir, '3rd_party')
         if os.path.exists(third_party_mods_dir):
             for mod_folder in os.listdir(third_party_mods_dir):
                 mod_info_path = os.path.join(third_party_mods_dir, mod_folder, 'mod_info.json')
                 if os.path.exists(mod_info_path):
-                    mod_id, mod_title, mod_version = check_mod(mod_info_path)
-                    if mod_id:
-                        process_duplicate(mod_info_path, mod_id=mod_id)
-                    if mod_title:
-                        process_duplicate(mod_info_path, mod_title=mod_title)
-
-        # Handle duplicates
+                    with open(mod_info_path, 'r') as f:
+                        mod_info = json.load(f)
+                        mod_id = mod_info.get('id')
+                        mod_title = mod_info.get('title')
+                        mod_version = mod_info.get('version', 'Unknown')
+                        if mod_id:
+                            if mod_id in mod_ids and mod_id not in processed_duplicates:
+                                duplicates.append((mod_ids[mod_id], mod_info_path, mod_id, mod_title, mod_version))
+                                processed_duplicates.add(mod_id)
+                            else:
+                                mod_ids[mod_id] = mod_info_path
+                        if mod_title:
+                            if mod_title in mod_titles and mod_title not in processed_duplicates:
+                                duplicates.append((mod_titles[mod_title], mod_info_path, mod_title, mod_id, mod_version))
+                                processed_duplicates.add(mod_title)
+                            else:
+                                mod_titles[mod_title] = mod_info_path
         for original, duplicate, duplicate_identifier, duplicate_title, duplicate_version in duplicates:
             original_version = 'Unknown'
             with open(original, 'r') as f:
                 original_info = json.load(f)
                 original_version = original_info.get('version', 'Unknown')
-            if messagebox.askyesno('Duplicate Mod Found', f'Duplicate mod found: {duplicate_title} {duplicate_version} ({duplicate_identifier}) and {duplicate_title} {original_version} ({duplicate_identifier}), would you like to delete the oldest version to fix this conflict?'):
+            if messagebox.askyesno('Duplicate Mod Found', f'Duplicate mod found: {duplicate_title} {duplicate_version} ({duplicate_identifier}) and {duplicate_title} {original_version} ({duplicate_identifier}), would you like to delete the oldest version to fix this confliction?'):
                 try:
                     duplicate_folder = os.path.dirname(duplicate)
                     shutil.rmtree(duplicate_folder)
@@ -1140,7 +1148,6 @@ class BuoyUI:
                     messagebox.showerror('Error', f'The file {duplicate_folder} was already deleted.')
                 except Exception as e:
                     messagebox.showerror('Error', f'Failed to delete duplicate mod: {str(e)}')
-
         self.refresh_mod_lists()
 
 
@@ -1795,44 +1802,56 @@ class BuoyUI:
         logging.info('Made rotating backup')
 
     def copy_existing_gdweave_mods(self):
-        game_path = self.settings.get('game_path')
-        if not game_path:
+        if not self.settings.get('game_path'):
+            logging.info('Game path not set, skipping existing mod copy.')
             return
-        gdweave_mods_path = os.path.join(game_path, 'GDWeave', 'Mods')
+        gdweave_mods_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods')
         if not os.path.exists(gdweave_mods_path):
+            logging.info('GDWeave Mods folder not found, skipping existing mod copy.')
             return
         third_party_mods_dir = os.path.join(self.mods_dir, '3rd_party')
         os.makedirs(third_party_mods_dir, exist_ok=True)
-        known_mod_ids = set(mod['id'] for mod in self.installed_mods)
+        known_mod_ids = set()
+        for mod_folder in os.listdir(self.mods_dir):
+            mod_info_path = os.path.join(self.mods_dir, mod_folder, 'mod_info.json')
+            if os.path.exists(mod_info_path):
+                with open(mod_info_path, 'r') as f:
+                    mod_info = json.load(f)
+                    known_mod_ids.add(mod_info.get('id'))
+        newly_installed_mods = []
         for mod_folder in os.listdir(gdweave_mods_path):
             src_mod_path = os.path.join(gdweave_mods_path, mod_folder)
             if not os.path.isdir(src_mod_path):
+                logging.info(f'Skipped: {mod_folder} (not a directory)')
                 continue
             manifest_path = os.path.join(src_mod_path, 'manifest.json')
             if not os.path.exists(manifest_path):
+                logging.info(f'Skipped: {mod_folder} (no manifest.json found)')
                 continue
             try:
                 with open(manifest_path, 'r') as f:
                     manifest = json.load(f)
                 mod_id = manifest.get('Id')
+                mod_title = manifest.get('Name', mod_folder)
+                mod_author = manifest.get('Author', 'Unknown')
+                mod_description = manifest.get('Description', 'No description provided')
+                mod_version = manifest.get('Version', 'Unknown')
                 if mod_id in known_mod_ids:
+                    logging.info(f'Skipped known mod: {mod_title} (ID: {mod_id})')
                     continue
                 dst_mod_path = os.path.join(third_party_mods_dir, mod_id)
                 if not os.path.exists(dst_mod_path):
                     shutil.copytree(src_mod_path, dst_mod_path)
-                    mod_info = {
-                        'id': mod_id,
-                        'title': manifest.get('Name', mod_folder),
-                        'author': manifest.get('Author', 'Unknown'),
-                        'description': manifest.get('Description', 'No description provided'),
-                        'enabled': True,
-                        'version': manifest.get('Version', 'Unknown'),
-                        'third_party': True,
-                        'updated_on': int(time.time())
-                    }
-                    self.installed_mods.append(mod_info)
-            except Exception:
-                pass
+                    mod_info = {'id': mod_id, 'title': mod_title, 'author': mod_author, 'description': mod_description, 'enabled': True, 'version': mod_version, 'third_party': True, 'updated_on': int(time.time())}
+                    with open(os.path.join(dst_mod_path, 'mod_info.json'), 'w') as f:
+                        json.dump(mod_info, f, indent=2)
+                    logging.info(f'Copied third-party mod: {mod_title} (ID: {mod_id})')
+                    newly_installed_mods.append(mod_info)
+                else:
+                    logging.info(f'Skipped existing third-party mod: {mod_title} (ID: {mod_id})')
+            except Exception as e:
+                logging.info(f'Error processing mod {mod_folder}: {str(e)}')
+        self.installed_mods.extend(newly_installed_mods)
         self.refresh_mod_lists()
 
     def delete_temp_files(self):
@@ -3318,18 +3337,31 @@ class BuoyUI:
         logging.info('Settings saved:', self.settings)
 
     def refresh_mod_lists(self):
-        if not self.available_listbox.get(0, tk.END):
-            self.load_available_mods()
+        if hasattr(self, 'available_listbox'):
+            current_items = list(self.available_listbox.get(0, tk.END))
+            if not current_items:
+                self.load_available_mods()
         self.installed_mods = self.get_installed_mods()
-        self.installed_listbox.delete(0, tk.END)
-        for mod in self.installed_mods:
-            display_text = f"{'✅' if mod.get('enabled', True) else '❌'} {'[3rd]' if mod.get('third_party', False) else ''} {self.get_display_name(mod['title'])}".strip()
-            self.installed_listbox.insert(tk.END, display_text)
-        self.installed_frame.configure(text=f"Installed Mods ({len(self.installed_mods)})")
+        if hasattr(self, 'installed_listbox'):
+            self.installed_listbox.delete(0, tk.END)
+            for mod in self.installed_mods:
+                status = '✅' if mod.get('enabled', True) else '❌'
+                third_party = '[3rd] ' if mod.get('third_party', False) else ''
+                display_title = self.get_display_name(mod['title'])
+                display_text = f'{status} {third_party}{display_title}'.strip()
+                self.installed_listbox.insert(tk.END, display_text)
+            if hasattr(self, 'installed_frame'):
+                self.installed_frame.configure(text=f'Installed Mods ({len(self.installed_mods)})')
         self.save_mod_cache()
         self.filter_available_mods()
         self.filter_installed_mods()
-        self.available_frame.configure(text=f"Thunderstore Mods ({self.available_listbox.size()}/{len(self.available_mods)})")
+        if hasattr(self, 'available_frame'):
+            visible_mods = self.available_listbox.size()
+            total_mods = len(self.available_mods)
+            if visible_mods != total_mods:
+                self.available_frame.configure(text=f'Thunderstore Mods ({visible_mods}/{total_mods})')
+            else:
+                self.available_frame.configure(text=f'Thunderstore Mods ({total_mods})')
 
     def clean_mod_cache(self):
         updated_cache = {mod_id: mod_info for mod_id, mod_info in self.mod_cache.items() if self.mod_exists({'id': mod_id, 'third_party': mod_info.get('third_party', False)})}
