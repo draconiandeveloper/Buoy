@@ -1,6 +1,6 @@
 {
     "name": "Buoy",
-    "version_number": "1.0.0",
+    "version_number": "1.0.1",
     "website_url": "https://github.com/FerretPaws/Buoy",
     "description": "A mod manager designed for WEBFISHING using Python!",
     "dependencies": [

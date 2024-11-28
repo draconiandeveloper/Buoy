@@ -25,9 +25,9 @@
 
 If you're coming from **HLS**, there is a tool for **importing your old mods and settings** to this version.  
 
-1. Download the **HLSImporter.exe** from the [latest release](https://github.com/FerretPaws/Buoy/releases) tab.  
+1. Download the **BuoyImporter.exe** from the [latest release](https://github.com/FerretPaws/Buoy/releases) tab.  
 2. Run it **before launching Buoy for the first time**—your data will be transferred.  
-3. You can delete the **HLSImporter.exe** after the process is complete.  
+3. You can delete the **BuoyImporter.exe** after the process is complete.  
 
 **To install Buoy:**  
 - Download the [latest release ZIP](https://github.com/FerretPaws/Buoy/releases), extract the .zip to anywhere you like, then run the .exe inside there. Simple as that! Just remember to keep it inside the folder it extracts from!

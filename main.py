@@ -80,7 +80,7 @@ def get_version():
         logging.info(f'Error reading version file: {e}')
         return 'Unknown'
 
-class HookLineSinkerUI:
+class BuoyUI:
 
     def __init__(self, root):
         self.root = root
@@ -89,7 +89,17 @@ class HookLineSinkerUI:
         self.gui_queue = queue.Queue()
         self.gdweave_queue = queue.Queue()
         self.load_settings()
-        self.dark_mode_colors = {'bg': '#2b2b2b', 'fg': '#ffffff', 'select_bg': '#404040', 'select_fg': '#ffffff', 'button_bg': '#404040', 'button_fg': '#ffffff', 'entry_bg': '#333333', 'entry_fg': '#ffffff', 'frame_bg': '#1e1e1e', 'frame_fg': '#ffffff', 'menu_bg': '#2b2b2b', 'menu_fg': '#ffffff', 'tab_bg': '#333333', 'tab_fg': '#ffffff', 'tab_selected_bg': '#404040', 'tab_selected_fg': '#ffffff', 'scrollbar_bg': '#404040', 'scrollbar_fg': '#666666', 'highlight_bg': '#3d6a99', 'highlight_fg': '#ffffff', 'error_bg': '#992e2e', 'error_fg': '#ffffff', 'success_bg': '#2e9959', 'success_fg': '#ffffff'}
+        self.dark_mode_colors = {
+            'bg': '#2b2b2b', 'fg': '#ffffff', 'select_bg': '#404040', 
+            'select_fg': '#ffffff', 'button_bg': '#404040', 'button_fg': '#ffffff', 
+            'entry_bg': '#333333', 'entry_fg': '#ffffff', 'frame_bg': '#1e1e1e', 
+            'frame_fg': '#ffffff', 'menu_bg': '#2b2b2b', 'menu_fg': '#ffffff', 
+            'tab_bg': '#333333', 'tab_fg': '#ffffff', 'tab_selected_bg': '#404040', 
+            'tab_selected_fg': '#ffffff', 'scrollbar_bg': '#404040', 
+            'scrollbar_fg': '#666666', 'highlight_bg': '#3d6a99', 
+            'highlight_fg': '#ffffff', 'error_bg': '#992e2e', 'error_fg': '#ffffff', 
+            'success_bg': '#2e9959', 'success_fg': '#ffffff'
+        }
         self.dark_mode = tk.BooleanVar(value=self.settings.get('dark_mode', True))
         version = get_version()
         self.root.title(f'Buoy v{version}')
@@ -142,22 +152,68 @@ class HookLineSinkerUI:
         self.analytics_enabled = tk.BooleanVar(value=self.settings.get('analytics_enabled', True))
         logging.info(f'Initial game path: {self.game_path_entry.get()}')
         self.create_status_bar()
-        self.notebook = None
-        self.mod_limit_disabled = False
-        self.create_rotating_backup()
-        logging.info('Made rotating backup')
         self.create_main_ui()
         if self.dark_mode.get():
             self.toggle_dark_mode(show_restart_prompt=False)
+        self.mod_limit_disabled = False
         self.show_discord_prompt()
         self.check_for_duplicate_mods()
         self.multi_mod_warning_shown = False
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--fresh-update', action='store_true')
-        args = parser.parse_args()
-        if args.fresh_update:
-            self.show_update_complete()
-        self.last_activity_time = time.time()
+
+    def create_server_browser_tab(self):
+        """Creates the Server Browser tab and populates it with content."""
+        server_browser_frame = ttk.Frame(self.notebook)
+        self.notebook.add(server_browser_frame, text="Server Browser")  # Add tab
+
+        # Define the server list table
+        self.server_list = ttk.Treeview(server_browser_frame)
+        self.server_list['columns'] = ('lobby_name', 'current_players', 'max_players', 'lobby_code', '18plus')
+        self.server_list.column("#0", width=0, stretch=tk.NO)
+        self.server_list.column("lobby_name", anchor=tk.W, width=200)
+        self.server_list.column("18plus", anchor=tk.W, width=30)
+        self.server_list.column("current_players", anchor=tk.W, width=100)
+        self.server_list.column("max_players", anchor=tk.W, width=100)
+        self.server_list.column("lobby_code", anchor=tk.W, width=100)
+
+        self.server_list.heading("#0", text="", anchor=tk.W)
+        self.server_list.heading("lobby_name", text="Lobby Name", anchor=tk.W)
+        self.server_list.heading("18plus", text="18+", anchor=tk.W)
+        self.server_list.heading("current_players", text="Current Players", anchor=tk.W)
+        self.server_list.heading("max_players", text="Max Players", anchor=tk.W)
+        self.server_list.heading("lobby_code", text="Lobby Code", anchor=tk.W)
+
+        self.server_list.pack(fill=tk.BOTH, expand=True)
+
+        # Initial update
+        self.update_server_list()
+
+    def update_server_list(self):
+        try:
+            # Fetch server data from the endpoint
+            response = requests.get('http://127.0.0.1:5000/servers', timeout=5)
+            response.raise_for_status()  # Raise an error for HTTP issues
+
+            # Get the list of servers from the response
+            self.server_data = response.json().get('servers', [])
+            print(self.server_data)
+
+            # Clear the existing entries in the server list
+            self.server_list.delete(*self.server_list.get_children())
+
+            # Add new server data to the list
+            for server in self.server_data:
+                self.server_list.insert('', 'end', values=(
+                    server.get('lobby_name', 'Unknown'),
+                    server.get('current_players', 0),
+                    server.get('max_players', 0),
+                    server.get('lobby_code', 'N/A'),
+                    "Yes" if server.get('18plus', False) else "No"  # Display 'Yes' or 'No' for 18plus
+                ))
+        except requests.exceptions.RequestException as e:
+            print(f"Error updating server list: {e}")
+        finally:
+            # Schedule the next update
+            self.root.after(15000, self.update_server_list)  # Update every 15 seconds
 
     def save_sort_preferences(self):
         self.settings.update({'available_sort_by': self.available_sort_by.get(), 'installed_sort_by': self.installed_sort_by.get()})
@@ -173,61 +229,30 @@ class HookLineSinkerUI:
     def toggle_dark_mode(self, show_restart_prompt=True):
         is_dark = True
         style = ttk.Style()
-        version = sys.getwindowsversion()
-        if version.major == 10 and version.build >= 22000:
-            pywinstyles.change_header_color(self.root, '#1c1c1c' if is_dark else '#fafafa')
-        elif version.major == 10:
-            pywinstyles.apply_style(self.root, 'dark' if is_dark else 'normal')
-            self.root.wm_attributes('-alpha', 0.99)
-            self.root.wm_attributes('-alpha', 1)
-        if is_dark:
-            style.theme_use('default')
-            style.configure('TRadiobutton', background=self.dark_mode_colors['bg'], foreground=self.dark_mode_colors['fg'])
-            style.map('TRadiobutton', foreground=[('active', 'black')], background=[('active', self.dark_mode_colors['highlight_bg'])])
-            style.configure('TFrame', background=self.dark_mode_colors['bg'])
-            style.configure('TLabel', background=self.dark_mode_colors['bg'], foreground=self.dark_mode_colors['fg'])
-            style.configure('TButton', background=self.dark_mode_colors['button_bg'], foreground=self.dark_mode_colors['button_fg'])
-            style.map('TButton', background=[('disabled', '#555555'), ('active', self.dark_mode_colors['highlight_bg'])], foreground=[('disabled', '#999999')])
-            style.configure('TEntry', fieldbackground=self.dark_mode_colors['entry_bg'], foreground=self.dark_mode_colors['entry_fg'])
-            style.configure('TLabelframe', background=self.dark_mode_colors['bg'])
-            style.configure('TLabelframe.Label', background=self.dark_mode_colors['bg'], foreground=self.dark_mode_colors['fg'])
-            style.configure('TNotebook', background=self.dark_mode_colors['bg'])
-            style.configure('TNotebook.Tab', background=self.dark_mode_colors['tab_bg'], foreground=self.dark_mode_colors['tab_fg'], padding=[10, 2])
-            style.map('TNotebook.Tab', background=[('selected', self.dark_mode_colors['tab_selected_bg'])], foreground=[('selected', self.dark_mode_colors['tab_selected_fg'])], expand=[('selected', [1, 1, 1, 0])])
-            style.configure('Treeview', background=self.dark_mode_colors['bg'], foreground=self.dark_mode_colors['fg'], fieldbackground=self.dark_mode_colors['bg'])
-            style.configure('Treeview.Heading', background=self.dark_mode_colors['button_bg'], foreground=self.dark_mode_colors['button_fg'])
-            style.map('Treeview', background=[('selected', self.dark_mode_colors['select_bg'])], foreground=[('selected', self.dark_mode_colors['select_fg'])])
-            style.map('TCheckbutton', background=[('active', 'darkgrey')])
-            style.configure('TCheckbutton', indicatorbackground=self.dark_mode_colors['bg'], indicatorforeground='white', background=self.dark_mode_colors['bg'], foreground='white')
-            listboxes = [self.available_listbox, self.installed_listbox, self.mod_details, self.modpacks_listbox, self.modpack_details]
-            listboxes = [lb for lb in listboxes if lb is not None]
-            for listbox in listboxes:
-                listbox.configure(bg=self.dark_mode_colors['bg'], fg=self.dark_mode_colors['fg'], selectbackground=self.dark_mode_colors['select_bg'], selectforeground=self.dark_mode_colors['select_fg'])
-            self.root.configure(bg=self.dark_mode_colors['bg'])
-        else:
-            style.configure('TFrame', background='')
-            style.configure('TLabel', background='', foreground='')
-            style.configure('TButton', background='', foreground='')
-            style.map('TButton', background=[], foreground=[])
-            style.configure('TEntry', fieldbackground='', foreground='')
-            style.configure('TLabelframe', background='')
-            style.configure('TLabelframe.Label', background='', foreground='')
-            style.configure('TNotebook', background='')
-            style.configure('TNotebook.Tab', background='', foreground='')
-            style.map('TNotebook.Tab', background=[], foreground=[])
-            style.configure('Treeview', background='white', foreground='#2b2b2b', fieldbackground='white')
-            style.configure('Treeview.Heading', background=style.lookup('TButton', 'background'), foreground=style.lookup('TButton', 'foreground'))
-            style.map('Treeview', background=[('selected', style.lookup('TButton', 'background'))], foreground=[('selected', style.lookup('TButton', 'foreground'))])
-            listboxes = [self.available_listbox, self.installed_listbox, self.mod_details, self.modpacks_listbox, self.modpack_details, getattr(self, 'save_listbox', None)]
-            listboxes = [lb for lb in listboxes if lb is not None]
-            for listbox in listboxes:
-                listbox.configure(bg='white', fg='black', selectbackground='#0078D7', selectforeground='white')
-            self.root.configure(bg='')
-        self.settings['dark_mode'] = is_dark
-        self.save_settings()
-        if show_restart_prompt:
-            messagebox.showinfo('Restart Required', 'A restart is required for the theme change to take full effect. Press OK to close Buoy. Please manually start it back up.')
-            self.root.destroy()
+
+        style.theme_use('default')
+        style.configure('TRadiobutton', background=self.dark_mode_colors['bg'], foreground=self.dark_mode_colors['fg'])
+        style.map('TRadiobutton', foreground=[('active', 'black')], background=[('active', self.dark_mode_colors['highlight_bg'])])
+        style.configure('TFrame', background=self.dark_mode_colors['bg'])
+        style.configure('TLabel', background=self.dark_mode_colors['bg'], foreground=self.dark_mode_colors['fg'])
+        style.configure('TButton', background=self.dark_mode_colors['button_bg'], foreground=self.dark_mode_colors['button_fg'])
+        style.map('TButton', background=[('disabled', '#555555'), ('active', self.dark_mode_colors['highlight_bg'])], foreground=[('disabled', '#999999')])
+        style.configure('TEntry', fieldbackground=self.dark_mode_colors['entry_bg'], foreground=self.dark_mode_colors['entry_fg'])
+        style.configure('TLabelframe', background=self.dark_mode_colors['bg'])
+        style.configure('TLabelframe.Label', background=self.dark_mode_colors['bg'], foreground=self.dark_mode_colors['fg'])
+        style.configure('TNotebook', background=self.dark_mode_colors['bg'])
+        style.configure('TNotebook.Tab', background=self.dark_mode_colors['tab_bg'], foreground=self.dark_mode_colors['tab_fg'], padding=[10, 2])
+        style.map('TNotebook.Tab', background=[('selected', self.dark_mode_colors['tab_selected_bg'])], foreground=[('selected', self.dark_mode_colors['tab_selected_fg'])], expand=[('selected', [1, 1, 1, 0])])
+        style.configure('Treeview', background=self.dark_mode_colors['bg'], foreground=self.dark_mode_colors['fg'], fieldbackground=self.dark_mode_colors['bg'])
+        style.configure('Treeview.Heading', background=self.dark_mode_colors['button_bg'], foreground=self.dark_mode_colors['button_fg'])
+        style.map('Treeview', background=[('selected', self.dark_mode_colors['select_bg'])], foreground=[('selected', self.dark_mode_colors['select_fg'])])
+        style.map('TCheckbutton', background=[('active', 'darkgrey')])
+        style.configure('TCheckbutton', indicatorbackground=self.dark_mode_colors['bg'], indicatorforeground='white', background=self.dark_mode_colors['bg'], foreground='white')
+        listboxes = [self.available_listbox, self.installed_listbox, self.mod_details, self.modpacks_listbox, self.modpack_details]
+        listboxes = [lb for lb in listboxes if lb is not None]
+        for listbox in listboxes:
+            listbox.configure(bg=self.dark_mode_colors['bg'], fg=self.dark_mode_colors['fg'], selectbackground=self.dark_mode_colors['select_bg'], selectforeground=self.dark_mode_colors['select_fg'])
+        self.root.configure(bg=self.dark_mode_colors['bg'])
 
     def setup_logging(self):
         log_dir = os.path.dirname(os.path.join(self.app_data_dir, 'latestlog.txt'))
@@ -300,7 +325,7 @@ class HookLineSinkerUI:
             log_window = tk.Toplevel(self.root)
             log_window.title('Full Buoy Log')
             log_window.geometry('800x600')
-            log_window.configure(background=self.dark_mode_colors['bg']) 
+            log_window.configure(background=self.dark_mode_colors['bg'])
             icon_path = get_resource_path('images/icon.ico')
             if os.path.exists(icon_path):
                 log_window.iconbitmap(icon_path)
@@ -339,41 +364,6 @@ class HookLineSinkerUI:
             self.settings['last_update_version'] = str(current_version)
             self.save_settings()
 
-    def toggle_gdweave(self):
-        if not self.settings.get('game_path'):
-            messagebox.showerror('Error', 'Game path not set. Please set the game path first.')
-            return
-        game_path = self.settings['game_path']
-        gdweave_game_path = os.path.join(game_path, 'GDWeave')
-        winmm_game_path = os.path.join(game_path, 'winmm.dll')
-        gdweave_backup_path = os.path.join(self.app_data_dir, 'GDWeave_Backup')
-        winmm_backup_path = os.path.join(self.app_data_dir, 'winmm_backup.dll')
-        if os.path.exists(gdweave_game_path) or os.path.exists(winmm_game_path):
-            try:
-                if os.path.exists(gdweave_game_path):
-                    shutil.move(gdweave_game_path, gdweave_backup_path)
-                if os.path.exists(winmm_game_path):
-                    shutil.move(winmm_game_path, winmm_backup_path)
-                messagebox.showinfo('Success', 'GDWeave has been disabled and backed up.')
-                self.set_status('GDWeave disabled and backed up')
-            except Exception as e:
-                error_msg = f'Failed to disable GDWeave: {str(e)}'
-                messagebox.showerror('Error', error_msg)
-                return
-        else:
-            try:
-                if os.path.exists(gdweave_backup_path):
-                    shutil.move(gdweave_backup_path, gdweave_game_path)
-                if os.path.exists(winmm_backup_path):
-                    shutil.move(winmm_backup_path, winmm_game_path)
-                messagebox.showinfo('Success', 'GDWeave has been enabled and restored.')
-                self.set_status('GDWeave enabled and restored')
-            except Exception as e:
-                error_msg = f'Failed to enable GDWeave: {str(e)}'
-                messagebox.showerror('Error', error_msg)
-                return
-        self.update_setup_status()
-
     def uninstall_gdweave(self):
         if not self.settings.get('game_path'):
             messagebox.showerror('Error', 'Game path not set. Please set the game path first.')
@@ -410,12 +400,14 @@ class HookLineSinkerUI:
                 messagebox.showerror('Error', error_message)
 
     def create_main_ui(self):
+        
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(expand=True, fill='both')
         self.create_mod_manager_tab()
         self.create_modpacks_tab()
+        # self.create_server_browser_tab() # WIP
         self.create_game_manager_tab()
-        self.create_hls_setup_tab()
+        self.create_buoy_setup_tab()
         self.create_settings_tab()
         self.copy_existing_gdweave_mods()
         self.load_available_mods()
@@ -548,46 +540,119 @@ class HookLineSinkerUI:
         self.notebook.add(modpacks_frame, text='Mod Profiles')
         modpacks_frame.grid_columnconfigure(0, weight=1)
         modpacks_frame.grid_rowconfigure(2, weight=1)
+
         title_label = ttk.Label(modpacks_frame, text='Mod Profiles', font=('Helvetica', 16, 'bold'))
         title_label.grid(row=0, column=0, pady=(20, 5), padx=20, sticky='w')
-        subtitle_label = ttk.Label(modpacks_frame, text='Create, import, and manage mod profiles', font=('Helvetica', 10, 'italic'))
+
+        subtitle_label = ttk.Label(modpacks_frame, text='Create, import, export, and manage mod profiles', font=('Helvetica', 10, 'italic'))
         subtitle_label.grid(row=1, column=0, pady=(0, 10), padx=20, sticky='w')
+
         panels_container = ttk.Frame(modpacks_frame)
         panels_container.grid(row=2, column=0, sticky='nsew', pady=5)
         panels_container.grid_columnconfigure(0, weight=1)
         panels_container.grid_columnconfigure(1, weight=1)
         panels_container.grid_rowconfigure(0, weight=1)
+
         left_frame = ttk.LabelFrame(panels_container, text='Available Mod Profiles')
         left_frame.grid(row=0, column=0, sticky='nsew', padx=(5, 2.5))
         left_frame.grid_columnconfigure(0, weight=1)
         left_frame.grid_rowconfigure(1, weight=1)
+
         self.modpacks_listbox = tk.Listbox(left_frame, width=45)
         modpacks_scrollbar = ttk.Scrollbar(left_frame, orient='vertical', command=self.modpacks_listbox.yview)
         self.modpacks_listbox.configure(yscrollcommand=modpacks_scrollbar.set)
         self.modpacks_listbox.grid(row=1, column=0, sticky='nsew', padx=(5, 0), pady=5)
         modpacks_scrollbar.grid(row=1, column=1, sticky='ns', pady=5, padx=(0, 5))
         self.modpacks_listbox.bind('<<ListboxSelect>>', self.on_modpack_select)
+
         buttons_frame = ttk.Frame(left_frame)
         buttons_frame.grid(row=2, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
         buttons_frame.grid_columnconfigure(0, weight=1)
         buttons_frame.grid_columnconfigure(1, weight=1)
         ttk.Button(buttons_frame, text='Create', command=self.create_modpack_window).grid(row=0, column=0, padx=2, pady=2, sticky='ew')
         ttk.Button(buttons_frame, text='Import', command=self.import_modpack).grid(row=0, column=1, padx=2, pady=2, sticky='ew')
-        ttk.Button(buttons_frame, text='Apply', command=self.apply_modpack).grid(row=1, column=0, padx=2, pady=2, sticky='ew')
+        ttk.Button(buttons_frame, text='Import JSON', command=self.import_json_modpack).grid(row=1, column=0, padx=2, pady=2, sticky='ew')
         ttk.Button(buttons_frame, text='Delete', command=self.remove_modpack).grid(row=1, column=1, padx=2, pady=2, sticky='ew')
+        ttk.Button(buttons_frame, text='Apply Mod Profile', command=self.apply_modpack).grid(row=2, column=0, columnspan=2, padx=2, pady=2, sticky='nsew')
+        buttons_frame.grid_rowconfigure(2, weight=1)
         right_frame = ttk.LabelFrame(panels_container, text='Mod Profile Details')
         right_frame.grid(row=0, column=1, sticky='nsew', padx=(2.5, 5))
         right_frame.grid_columnconfigure(0, weight=1)
         right_frame.grid_rowconfigure(0, weight=1)
+
         self.modpack_details = tk.Text(right_frame, wrap=tk.WORD)
         details_scrollbar = ttk.Scrollbar(right_frame, orient='vertical', command=self.modpack_details.yview)
         self.modpack_details.configure(yscrollcommand=details_scrollbar.set)
         self.modpack_details.grid(row=0, column=0, sticky='nsew', padx=(5, 0), pady=5)
         details_scrollbar.grid(row=0, column=1, sticky='ns', pady=5, padx=(0, 5))
         self.modpack_details.config(state='disabled')
+
         self.modpacks_dir = os.path.join(self.app_data_dir, 'modpacks')
         os.makedirs(self.modpacks_dir, exist_ok=True)
         self.refresh_modpacks_list()
+
+    def import_json_modpack(self):
+        file_path = filedialog.askopenfilename(filetypes=[('JSON files', '*.json')])
+        if not file_path:
+            return
+        try:
+            with open(file_path, 'r') as f:
+                modpack_info = json.load(f)
+            required_fields = ['name', 'author', 'description', 'mods']
+            if not all(field in modpack_info for field in required_fields):
+                raise Exception('Invalid mod profile format')
+            modpack_path = os.path.join(self.modpacks_dir, f"{modpack_info['name']}.json")
+            if os.path.exists(modpack_path):
+                if not messagebox.askyesno('Mod Profile Exists', 'Overwrite existing mod profile?'):
+                    return
+            with open(modpack_path, 'w') as outfile:
+                json.dump(modpack_info, outfile, indent=4)
+            self.refresh_modpacks_list()
+            self.modpacks_listbox.selection_set(self.modpacks_listbox.get(0, tk.END).index(modpack_info['name']))
+            self.on_modpack_select(None)
+            if messagebox.askyesno('Import Success', 'Apply mod profile now?'):
+                self.apply_imported_modpack(modpack_info)
+        except Exception as e:
+            messagebox.showerror('Error', f'Failed to import mod profile: {str(e)}')
+            self.set_status(f'Failed to import mod profile: {str(e)}')
+
+    def apply_imported_modpack(self, modpack_info):
+        try:
+            for mod in self.installed_mods:
+                mod['enabled'] = False
+                self.save_mod_info(mod)
+
+            for mod_entry in modpack_info['mods']:
+                mod_id = mod_entry['id']
+                existing_mod = next((mod for mod in self.installed_mods if mod['id'] == mod_id), None)
+
+                if existing_mod:
+                    if existing_mod.get('version') != mod_entry.get('version'):
+                        if mod_entry.get('thunderstore_id'):
+                            available_mod = next((mod for mod in self.available_mods if mod['thunderstore_id'] == mod_entry['thunderstore_id']), None)
+                            if available_mod:
+                                self.uninstall_mod_files(existing_mod)
+                                temp_mod = available_mod.copy()
+                                temp_mod.update({'version': mod_entry['version'], 'id': mod_id, 'third_party': mod_entry.get('third_party', False)})
+                                self.download_and_install_mod(temp_mod)
+                                continue
+                    existing_mod['enabled'] = True
+                    self.save_mod_info(existing_mod)
+                elif mod_entry.get('thunderstore_id'):
+                    available_mod = next((mod for mod in self.available_mods if mod['thunderstore_id'] == mod_entry['thunderstore_id']), None)
+                    if available_mod:
+                        temp_mod = available_mod.copy()
+                        temp_mod.update({'version': mod_entry['version'], 'id': mod_id, 'third_party': mod_entry.get('third_party', False)})
+                        self.download_and_install_mod(temp_mod)
+
+            self.refresh_mod_lists()
+            messagebox.showinfo('Success', f"Mod profile '{modpack_info['name']}' applied successfully!")
+            self.set_status(f"Applied mod profile: {modpack_info['name']}")
+
+        except Exception as e:
+            error_message = f"Failed to apply mod profile: {str(e)}"
+            messagebox.showerror('Error', error_message)
+            self.set_status(error_message)
 
     def create_modpack_window(self):
         modpack_window = tk.Toplevel(self.root)
@@ -644,6 +709,24 @@ class HookLineSinkerUI:
             selections = modpack_listbox.curselection()
             for index in reversed(selections):
                 modpack_listbox.delete(index)
+
+        def export_modpack():
+            if not name_entry.get().strip() or not author_entry.get().strip():
+                messagebox.showerror('Error', 'Please enter a name and author for the modpack.')
+                return
+            modpack_info = {
+                'name': name_entry.get().strip(),
+                'author': author_entry.get().strip(),
+                'description': description_text.get('1.0', tk.END).strip(),
+                'mods': [{'id': mod['id'], 'title': mod['title'], 'version': mod.get('version', 'Unknown'), 'thunderstore_id': mod.get('thunderstore_id')} for mod in self.installed_mods if mod['title'] in modpack_listbox.get(0, tk.END) and (not mod.get('third_party', False))],
+                'created': datetime.now().isoformat()
+            }
+            json_data = json.dumps(modpack_info, indent=2)
+            file_path = filedialog.asksaveasfilename(title='Export Modpack as JSON', defaultextension='.json', filetypes=[('JSON files', '*.json')])
+            if file_path:
+                with open(file_path, 'w') as f:
+                    f.write(json_data)
+                messagebox.showinfo('Success', 'Modpack exported successfully!')
 
         def save_modpack():
             name = name_entry.get().strip()
@@ -707,6 +790,7 @@ class HookLineSinkerUI:
         ttk.Button(buttons_frame, text='Add Selected', command=add_to_modpack).pack(side='left', padx=5)
         ttk.Button(buttons_frame, text='Remove Selected', command=remove_from_modpack).pack(side='left', padx=5)
         ttk.Button(buttons_frame, text='Add Enabled Mods', command=add_enabled_mods_to_modpack_list).pack(side='left', padx=5)
+        ttk.Button(buttons_frame, text='Export as JSON', command=export_modpack).pack(side='left', padx=5)
         ttk.Button(buttons_frame, text='Save Profile', command=save_modpack).pack(side='left', padx=5)
         ttk.Button(buttons_frame, text='Cancel', command=modpack_window.destroy).pack(side='left', padx=5)
 
@@ -999,54 +1083,52 @@ class HookLineSinkerUI:
         mod_titles = {}
         duplicates = []
         processed_duplicates = set()
+
+        def check_mod(mod_info_path):
+            with open(mod_info_path, 'r') as f:
+                mod_info = json.load(f)
+                mod_id = mod_info.get('id')
+                mod_title = mod_info.get('title')
+                mod_version = mod_info.get('version', 'Unknown')
+                return mod_id, mod_title, mod_version
+
+        def process_duplicate(mod_info_path, mod_id=None, mod_title=None):
+            if mod_id and mod_id in mod_ids and mod_id not in processed_duplicates:
+                duplicates.append((mod_ids[mod_id], mod_info_path, mod_id, mod_title, mod_version))
+                processed_duplicates.add(mod_id)
+            elif mod_title and mod_title in mod_titles and mod_title not in processed_duplicates:
+                duplicates.append((mod_titles[mod_title], mod_info_path, mod_title, mod_id, mod_version))
+                processed_duplicates.add(mod_title)
+
+        # Check mods in main directory
         for mod_folder in os.listdir(self.mods_dir):
             mod_info_path = os.path.join(self.mods_dir, mod_folder, 'mod_info.json')
             if os.path.exists(mod_info_path):
-                with open(mod_info_path, 'r') as f:
-                    mod_info = json.load(f)
-                    mod_id = mod_info.get('id')
-                    mod_title = mod_info.get('title')
-                    mod_version = mod_info.get('version', 'Unknown')
-                    if mod_id:
-                        if mod_id in mod_ids and mod_id not in processed_duplicates:
-                            duplicates.append((mod_ids[mod_id], mod_info_path, mod_id, mod_title, mod_version))
-                            processed_duplicates.add(mod_id)
-                        else:
-                            mod_ids[mod_id] = mod_info_path
-                    if mod_title:
-                        if mod_title in mod_titles and mod_title not in processed_duplicates:
-                            duplicates.append((mod_titles[mod_title], mod_info_path, mod_title, mod_id, mod_version))
-                            processed_duplicates.add(mod_title)
-                        else:
-                            mod_titles[mod_title] = mod_info_path
+                mod_id, mod_title, mod_version = check_mod(mod_info_path)
+                if mod_id:
+                    process_duplicate(mod_info_path, mod_id=mod_id)
+                if mod_title:
+                    process_duplicate(mod_info_path, mod_title=mod_title)
+
+        # Check mods in 3rd party directory
         third_party_mods_dir = os.path.join(self.mods_dir, '3rd_party')
         if os.path.exists(third_party_mods_dir):
             for mod_folder in os.listdir(third_party_mods_dir):
                 mod_info_path = os.path.join(third_party_mods_dir, mod_folder, 'mod_info.json')
                 if os.path.exists(mod_info_path):
-                    with open(mod_info_path, 'r') as f:
-                        mod_info = json.load(f)
-                        mod_id = mod_info.get('id')
-                        mod_title = mod_info.get('title')
-                        mod_version = mod_info.get('version', 'Unknown')
-                        if mod_id:
-                            if mod_id in mod_ids and mod_id not in processed_duplicates:
-                                duplicates.append((mod_ids[mod_id], mod_info_path, mod_id, mod_title, mod_version))
-                                processed_duplicates.add(mod_id)
-                            else:
-                                mod_ids[mod_id] = mod_info_path
-                        if mod_title:
-                            if mod_title in mod_titles and mod_title not in processed_duplicates:
-                                duplicates.append((mod_titles[mod_title], mod_info_path, mod_title, mod_id, mod_version))
-                                processed_duplicates.add(mod_title)
-                            else:
-                                mod_titles[mod_title] = mod_info_path
+                    mod_id, mod_title, mod_version = check_mod(mod_info_path)
+                    if mod_id:
+                        process_duplicate(mod_info_path, mod_id=mod_id)
+                    if mod_title:
+                        process_duplicate(mod_info_path, mod_title=mod_title)
+
+        # Handle duplicates
         for original, duplicate, duplicate_identifier, duplicate_title, duplicate_version in duplicates:
             original_version = 'Unknown'
             with open(original, 'r') as f:
                 original_info = json.load(f)
                 original_version = original_info.get('version', 'Unknown')
-            if messagebox.askyesno('Duplicate Mod Found', f'Duplicate mod found: {duplicate_title} {duplicate_version} ({duplicate_identifier}) and {duplicate_title} {original_version} ({duplicate_identifier}), would you like to delete the oldest version to fix this confliction?'):
+            if messagebox.askyesno('Duplicate Mod Found', f'Duplicate mod found: {duplicate_title} {duplicate_version} ({duplicate_identifier}) and {duplicate_title} {original_version} ({duplicate_identifier}), would you like to delete the oldest version to fix this conflict?'):
                 try:
                     duplicate_folder = os.path.dirname(duplicate)
                     shutil.rmtree(duplicate_folder)
@@ -1055,7 +1137,9 @@ class HookLineSinkerUI:
                     messagebox.showerror('Error', f'The file {duplicate_folder} was already deleted.')
                 except Exception as e:
                     messagebox.showerror('Error', f'Failed to delete duplicate mod: {str(e)}')
+
         self.refresh_mod_lists()
+
 
     def filter_installed_mods(self, event=None):
         if not hasattr(self, 'installed_listbox'):
@@ -1264,37 +1348,6 @@ class HookLineSinkerUI:
             messagebox.showerror('Error', error_message)
             self.set_status(error_message)
 
-    def check_migration_needed(self):
-        """Check if migration from old format is needed and handle it"""
-        if self.settings.get('thunderstore_migrated', False):
-            return
-        gdweave_path = os.path.join(self.settings.get('game_path', ''), 'GDWeave', 'Mods')
-        has_old_mods = os.path.exists(gdweave_path) and os.listdir(gdweave_path)
-        if has_old_mods:
-            message = "We've detected you've previously used Buoy before the Thunderstore update. To use Buoy with the new version, we must completely clear your existing mods to work with the new system.\n\nDon't worry - all your saves, backups, settings, and mod configurations will transfer over, only the mods need to be cleared.\n\nPress Yes to clear all mods and continue, or No to exit and backup your mods first.\n\nWarning: This will delete all currently installed mods!"
-            if messagebox.askyesno('Migration Required', message):
-                try:
-                    gdweave_mods_dir = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods')
-                    if os.path.exists(gdweave_mods_dir):
-                        shutil.rmtree(gdweave_mods_dir)
-                        os.makedirs(gdweave_mods_dir)
-                    if os.path.exists(self.mods_dir):
-                        shutil.rmtree(self.mods_dir)
-                        os.makedirs(self.mods_dir)
-                    self.settings['thunderstore_migrated'] = True
-                    self.save_settings()
-                    self.set_status('Migration complete - mods cleared for Thunderstore update')
-                    messagebox.showinfo('Migration Complete', 'Migration completed successfully. You can now install mods from Thunderstore.')
-                except Exception as e:
-                    error_msg = f'Failed to migrate: {str(e)}'
-                    logging.error(error_msg)
-                    self.set_status(error_msg)
-                    messagebox.showerror('Migration Failed', 'Failed to complete migration. Please try again or contact support.')
-                    sys.exit(1)
-            else:
-                messagebox.showinfo('Application Closing', 'Please backup your mods and restart the application when ready to migrate.')
-                sys.exit(0)
-
     def restore_backup(self):
         selected = self.backup_tree.selection()
         if not selected:
@@ -1430,7 +1483,7 @@ class HookLineSinkerUI:
                 messagebox.showerror('Error', error_message)
                 self.set_status(error_message)
 
-    def create_hls_setup_tab(self):
+    def create_buoy_setup_tab(self):
         setup_frame = ttk.Frame(self.notebook)
         self.notebook.add(setup_frame, text='Buoy Setup')
         setup_frame.grid_columnconfigure(0, weight=1)
@@ -1601,14 +1654,14 @@ class HookLineSinkerUI:
         support_button = ttk.Button(quick_support_frame, text='Quick Support - Copy all Debug Info', command=self.copy_support_info)
         support_button.grid(row=0, column=0, sticky='ew')
         ttk.Separator(troubleshoot_frame, orient='horizontal').grid(row=1, column=0, columnspan=3, sticky='ew', pady=5)
-        self.toggle_gdweave_button = ttk.Button(troubleshoot_frame, text='   ', command=self.toggle_gdweave, state='disabled')
+        self.toggle_gdweave_button = ttk.Button(troubleshoot_frame, text='   ',state='disabled')
         self.toggle_gdweave_button.grid(row=2, column=0, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Clear GDWeave Mods', command=self.clear_gdweave_mods).grid(row=2, column=1, pady=5, padx=5, sticky='ew')
-        ttk.Button(troubleshoot_frame, text='Clear Buoy Mods', command=self.clear_hls_mods).grid(row=2, column=2, pady=5, padx=5, sticky='ew')
+        ttk.Button(troubleshoot_frame, text='Clear Buoy Mods', command=self.clear_buoy_mods).grid(row=2, column=2, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Open GDWeave Log', command=self.open_gdweave_log).grid(row=3, column=0, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Open Buoy Log', command=self.open_latest_log).grid(row=3, column=1, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Open Full Buoy Log', command=self.open_full_log).grid(row=3, column=2, pady=5, padx=5, sticky='ew')
-        ttk.Button(troubleshoot_frame, text='Open Buoy Folder', command=self.open_hls_folder).grid(row=4, column=0, pady=5, padx=5, sticky='ew')
+        ttk.Button(troubleshoot_frame, text='Open Buoy Folder', command=self.open_buoy_folder).grid(row=4, column=0, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Open GDWeave Folder', command=self.open_gdweave_folder).grid(row=4, column=1, pady=5, padx=5, sticky='ew')
         ttk.Button(troubleshoot_frame, text='Clear Temp Folder', command=self.delete_temp_files).grid(row=4, column=2, pady=5, padx=5, sticky='ew')
         self.settings_status = ttk.Label(settings_frame, text='', font=('Helvetica', 12))
@@ -1637,10 +1690,10 @@ class HookLineSinkerUI:
         else:
             info += 'No log found'
         info += '\n============================\nBuoy Log:\n'
-        hls_log_path = os.path.join(self.app_data_dir, 'latestlog.txt')
-        if os.path.exists(hls_log_path):
+        buoy_log_path = os.path.join(self.app_data_dir, 'latestlog.txt')
+        if os.path.exists(buoy_log_path):
             try:
-                with open(hls_log_path, 'r') as f:
+                with open(buoy_log_path, 'r') as f:
                     lines = f.readlines()[5:]
                     log_content = ''.join(lines).strip()
                     info += log_content if log_content else 'No critical errors found in Buoy log'
@@ -1664,7 +1717,7 @@ class HookLineSinkerUI:
         messagebox.showinfo('Success', 'Support information has been copied to your clipboard.\nYou can now paste this in Discord for support.')
 
     def show_credits(self):
-        credits_text = 'Big thank you to the following people for their contributions to Buoy!\n\nDevelopment:\n• Paws - Developer and maintainer of Buoy\n\nBuoy Supporters:\n• @.the_blue - Created Buoy icon \n\nSpecial Thanks:\n• All mod creators for their contributions\n• You for using Buoy!'
+        credits_text = 'Big thank you to the following people for their contributions to Buoy!\n\nDevelopment:\n• Paws - Developer and maintainer of Buoy\n\nBuoy Supporters:\n• @.the_blue - Created Buoy icon \n\nSpecial Thanks:\n• All mod creators for their contributions\n• You for using Buoy!\n• Pyoid - Original dev of HLS!'
         messagebox.showinfo('Credits', credits_text)
 
     def show_changelog(self):
@@ -1684,9 +1737,6 @@ class HookLineSinkerUI:
         except Exception as e:
             logging.error(f'Error showing changelog: {e}')
             messagebox.showerror('Error', f'Failed to load changelog: {e}')
-
-    def open_help_website(self):
-        webbrowser.open('')
 
     def create_rotating_backup(self):
         if not self.settings.get('auto_backup', True):
@@ -1742,60 +1792,48 @@ class HookLineSinkerUI:
         logging.info('Made rotating backup')
 
     def copy_existing_gdweave_mods(self):
-        if not self.settings.get('game_path'):
-            logging.info('Game path not set, skipping existing mod copy.')
+        game_path = self.settings.get('game_path')
+        if not game_path:
             return
-        gdweave_mods_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods')
+        gdweave_mods_path = os.path.join(game_path, 'GDWeave', 'Mods')
         if not os.path.exists(gdweave_mods_path):
-            logging.info('GDWeave Mods folder not found, skipping existing mod copy.')
             return
         third_party_mods_dir = os.path.join(self.mods_dir, '3rd_party')
         os.makedirs(third_party_mods_dir, exist_ok=True)
-        known_mod_ids = set()
-        for mod_folder in os.listdir(self.mods_dir):
-            mod_info_path = os.path.join(self.mods_dir, mod_folder, 'mod_info.json')
-            if os.path.exists(mod_info_path):
-                with open(mod_info_path, 'r') as f:
-                    mod_info = json.load(f)
-                    known_mod_ids.add(mod_info.get('id'))
-        newly_installed_mods = []
+        known_mod_ids = set(mod['id'] for mod in self.installed_mods)
         for mod_folder in os.listdir(gdweave_mods_path):
             src_mod_path = os.path.join(gdweave_mods_path, mod_folder)
             if not os.path.isdir(src_mod_path):
-                logging.info(f'Skipped: {mod_folder} (not a directory)')
                 continue
             manifest_path = os.path.join(src_mod_path, 'manifest.json')
             if not os.path.exists(manifest_path):
-                logging.info(f'Skipped: {mod_folder} (no manifest.json found)')
                 continue
             try:
                 with open(manifest_path, 'r') as f:
                     manifest = json.load(f)
                 mod_id = manifest.get('Id')
-                mod_title = manifest.get('Name', mod_folder)
-                mod_author = manifest.get('Author', 'Unknown')
-                mod_description = manifest.get('Description', 'No description provided')
-                mod_version = manifest.get('Version', 'Unknown')
                 if mod_id in known_mod_ids:
-                    logging.info(f'Skipped known mod: {mod_title} (ID: {mod_id})')
                     continue
                 dst_mod_path = os.path.join(third_party_mods_dir, mod_id)
                 if not os.path.exists(dst_mod_path):
                     shutil.copytree(src_mod_path, dst_mod_path)
-                    mod_info = {'id': mod_id, 'title': mod_title, 'author': mod_author, 'description': mod_description, 'enabled': True, 'version': mod_version, 'third_party': True, 'updated_on': int(time.time())}
-                    with open(os.path.join(dst_mod_path, 'mod_info.json'), 'w') as f:
-                        json.dump(mod_info, f, indent=2)
-                    logging.info(f'Copied third-party mod: {mod_title} (ID: {mod_id})')
-                    newly_installed_mods.append(mod_info)
-                else:
-                    logging.info(f'Skipped existing third-party mod: {mod_title} (ID: {mod_id})')
-            except Exception as e:
-                logging.info(f'Error processing mod {mod_folder}: {str(e)}')
-        self.installed_mods.extend(newly_installed_mods)
+                    mod_info = {
+                        'id': mod_id,
+                        'title': manifest.get('Name', mod_folder),
+                        'author': manifest.get('Author', 'Unknown'),
+                        'description': manifest.get('Description', 'No description provided'),
+                        'enabled': True,
+                        'version': manifest.get('Version', 'Unknown'),
+                        'third_party': True,
+                        'updated_on': int(time.time())
+                    }
+                    self.installed_mods.append(mod_info)
+            except Exception:
+                pass
         self.refresh_mod_lists()
 
     def delete_temp_files(self):
-        temp_dir = os.path.join(os.getenv('APPDATA'), 'HookLineSinker', 'temp')
+        temp_dir = os.path.join(os.getenv('APPDATA'), 'Hook_Line_Sinker_Reborn', 'temp')
         if os.path.exists(temp_dir):
             try:
                 for root, dirs, files in os.walk(temp_dir, topdown=False):
@@ -1838,7 +1876,7 @@ class HookLineSinkerUI:
 
         def download_and_install():
             try:
-                temp_dir = os.path.join(os.getenv('APPDATA'), 'HookLineSinker', 'temp')
+                temp_dir = os.path.join(os.getenv('APPDATA'), 'Hook_line_Sinker_Reborn', 'temp')
                 os.makedirs(temp_dir, exist_ok=True)
                 with requests.get(url, stream=True) as response:
                     response.raise_for_status()
@@ -2028,7 +2066,7 @@ class HookLineSinkerUI:
             return
         selected_titles = [self.available_listbox.get(index) for index in selected]
         logging.debug(f'Selected titles: {selected_titles}')
-        protected_mods = ['GDWeave', 'Hook_Line_and_Sinker', 'r2modman', 'Hatchery']
+        protected_mods = ['GDWeave', 'Buoy', 'r2modman', 'Hatchery']
         for title in selected_titles:
             clean_title = title.replace('✅', '').replace('❌', '').replace('[3rd]', '').strip()
             backend_title = self.get_backend_name(clean_title)
@@ -2061,7 +2099,7 @@ class HookLineSinkerUI:
                         if len(parts) >= 2:
                             thunderstore_id = f'{parts[0]}-{parts[1]}'
                             logging.debug(f'Checking dependency: {thunderstore_id}')
-                            if thunderstore_id.startswith(('NotNet-GDWeave', 'Pyoid-Hook_Line_and_Sinker', 'ekbr-r2modman')):
+                            if thunderstore_id.startswith(('NotNet-GDWeave', 'PawsBeGamin-Buoy', 'ekbr-r2modman')):
                                 logging.debug(f'Skipping core dependency: {thunderstore_id}')
                                 continue
                             if not any((m.get('thunderstore_id') == thunderstore_id for m in self.installed_mods)):
@@ -2134,7 +2172,7 @@ class HookLineSinkerUI:
             parts = dep.split('-')
             if len(parts) >= 2:
                 thunderstore_id = f'{parts[0]}-{parts[1]}'
-                if thunderstore_id.startswith(('NotNet-GDWeave', 'Pyoid-Hook_Line_and_Sinker', 'ekbr-r2modman')):
+                if thunderstore_id.startswith(('NotNet-GDWeave', 'PawsBeGamin-Buoy', 'ekbr-r2modman')):
                     continue
                 if not any((m.get('thunderstore_id') == thunderstore_id for m in self.installed_mods)):
                     missing_deps.append(dep)
@@ -2173,7 +2211,7 @@ class HookLineSinkerUI:
         game_path = self.settings['game_path']
         gdweave_path = os.path.join(game_path, 'GDWeave')
         try:
-            temp_dir = os.path.join(os.getenv('APPDATA'), 'HookLineSinker', 'temp')
+            temp_dir = os.path.join(os.getenv('APPDATA'), 'Hook_Line_Sinker_Reborn', 'temp')
             os.makedirs(temp_dir, exist_ok=True)
             temp_backup_dir = os.path.join(temp_dir, f'gdweave_backup_{int(time.time())}')
             os.makedirs(temp_backup_dir, exist_ok=True)
@@ -2360,7 +2398,7 @@ class HookLineSinkerUI:
         label.bind('<Button-1>', open_link)
         label.config(cursor='hand2', foreground='blue')
 
-    def open_hls_folder(self):
+    def open_buoy_folder(self):
         if sys.platform.startswith('win'):
             os.startfile(self.app_data_dir)
         elif sys.platform.startswith('linux'):
@@ -2386,7 +2424,7 @@ class HookLineSinkerUI:
             log_window = tk.Toplevel(self.root)
             log_window.title('GDWeave Log')
             log_window.geometry('800x600')
-            log_window.configure(background=self.dark_mode_colors['bg']) 
+            log_window.configure(background=self.dark_mode_colors['bg'])
             icon_path = get_resource_path('images/icon.ico')
             if os.path.exists(icon_path):
                 log_window.iconbitmap(icon_path)
@@ -2426,7 +2464,7 @@ class HookLineSinkerUI:
         else:
             self.set_status('GDWeave mods folder not found.')
 
-    def clear_hls_mods(self):
+    def clear_buoy_mods(self):
         if not messagebox.askyesno('Confirm Clear', 'Are you sure you want to remove all mods managed by Buoy? This action cannot be undone.'):
             return
         try:
@@ -2500,36 +2538,6 @@ class HookLineSinkerUI:
         except Exception as e:
             raise ValueError(f'Failed to extract mod: {str(e)}')
 
-    def update_application(self, new_version):
-
-        def download_and_install():
-            try:
-                self.set_status('Downloading update...')
-                url = f'https://hooklinesinker.lol/download/{new_version}'
-                response = requests.get(url, stream=True, allow_redirects=True)
-                response.raise_for_status()
-                temp_dir = os.path.join(os.getenv('APPDATA'), 'HookLineSinker', 'temp')
-                os.makedirs(temp_dir, exist_ok=True)
-                installer_path = os.path.join(temp_dir, f'HookLineSinker-Setup-{new_version}.exe')
-                with open(installer_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-                self.set_status('Update downloaded, launching installer...')
-                if sys.platform.startswith('win'):
-                    subprocess.Popen([installer_path])
-                    self.settings['last_update_version'] = new_version
-                    self.save_settings()
-                    self.root.after(0, lambda: messagebox.showinfo('Update in Progress', 'The update is being installed. Please restart the application to use the new version.'))
-                    self.root.after(0, self.root.quit)
-                else:
-                    self.root.after(0, lambda: messagebox.showinfo('Update Downloaded', f'The update has been downloaded to {installer_path}. Please install it manually.'))
-            except Exception as e:
-                error_message = f'Failed to update: {str(e)}'
-                self.root.after(0, lambda: messagebox.showerror('Update Failed', error_message))
-                self.root.after(0, lambda: self.set_status(error_message))
-        threading.Thread(target=download_and_install, daemon=True).start()
-
     def create_status_bar(self):
         self.status_bar = ttk.Label(self.root, text='Ready', relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -2537,14 +2545,6 @@ class HookLineSinkerUI:
     def set_status(self, message):
         self.status_bar.config(text=message)
         self.root.update_idletasks()
-
-    def clear_placeholder(self, event, placeholder):
-        if event.widget.get() == placeholder:
-            event.widget.delete(0, tk.END)
-
-    def restore_placeholder(self, event, placeholder):
-        if event.widget.get() == '':
-            event.widget.insert(0, placeholder)
 
     def edit_mod_config(self):
         selected_indices = self.get_selected_installed_mod_indices()
@@ -2573,12 +2573,8 @@ class HookLineSinkerUI:
 
     def open_config_editor(self, mod_name, config, config_path):
         if not config:
-            messagebox.showinfo(
-                'No Config Found',
-                f"{mod_name} doesn't have a config. Either this mod doesn't require one, or you need to restart your game to generate the config."
-            )
+            messagebox.showinfo('No Config Found', f"{mod_name} doesn't have a config. Either this mod doesn't require one, or you need to restart your game to generate the config.")
             return
-
         editor_window = tk.Toplevel(self.root)
         editor_window.title(f'Edit Config: {mod_name}')
         editor_window.geometry('600x600')
@@ -2586,7 +2582,6 @@ class HookLineSinkerUI:
         if os.path.exists(icon_path):
             editor_window.iconbitmap(icon_path)
         editor_window.configure(bg='#2b2b2b')
-
         style = ttk.Style()
         style.configure('MainFrame.TFrame', background='#2b2b2b')
         style.configure('HeaderFrame.TFrame', background='#2b2b2b')
@@ -2594,34 +2589,24 @@ class HookLineSinkerUI:
         style.configure('ScrollableFrame.TFrame', background='#2b2b2b')
         style.configure('Vertical.TScrollbar', background='#2b2b2b', troughcolor='#3c3c3c', arrowcolor='#FFFFFF')
         style.configure('HeaderLabel.TLabel', background='#2b2b2b', foreground='#FFFFFF', font=('TkDefaultFont', 10, 'bold'))
-
         main_frame = ttk.Frame(editor_window, padding='10', style='MainFrame.TFrame')
         main_frame.pack(fill='both', expand=True)
         main_frame.columnconfigure(0, weight=1)
         main_frame.rowconfigure(1, weight=1)
-
         header_frame = ttk.Frame(main_frame, style='HeaderFrame.TFrame')
         header_frame.grid(row=0, column=0, sticky='ew', pady=(0, 10))
         header_frame.columnconfigure(0, weight=1)
-        ttk.Label(
-            header_frame,
-            text=f'Editing configuration for {mod_name}',
-            font=('TkDefaultFont', 10, 'bold'),
-            style='HeaderLabel.TLabel'
-        ).pack(side='left', fill='x', expand=True)
-
+        ttk.Label(header_frame, text=f'Editing configuration for {mod_name}', font=('TkDefaultFont', 10, 'bold'), style='HeaderLabel.TLabel').pack(side='left', fill='x', expand=True)
         content_frame = ttk.Frame(main_frame, style='ContentFrame.TFrame')
         content_frame.grid(row=1, column=0, sticky='nsew')
         content_frame.columnconfigure(0, weight=1)
         content_frame.rowconfigure(0, weight=1)
-
         canvas = tk.Canvas(content_frame, bg='#2b2b2b', highlightbackground='#FFFFFF', highlightthickness=1)
         scrollbar = ttk.Scrollbar(content_frame, orient='vertical', command=canvas.yview, style='Vertical.TScrollbar')
         scrollable_frame = ttk.Frame(canvas, style='ScrollableFrame.TFrame')
         scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
         canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
         canvas.configure(yscrollcommand=scrollbar.set)
-
         canvas.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
         content_frame.rowconfigure(0, weight=1)
@@ -2634,7 +2619,6 @@ class HookLineSinkerUI:
         def on_mousewheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), 'units')
         canvas.bind_all('<MouseWheel>', on_mousewheel)
-
         config_vars = {}
         for i, (key, value) in enumerate(config.items()):
             display_name = key
@@ -2644,11 +2628,9 @@ class HookLineSinkerUI:
                 display_name = ''.join([' ' + c if c.isupper() else c for c in display_name]).strip()
                 display_name = display_name.replace('_', ' ')
                 display_name = ' '.join((word.capitalize() for word in display_name.split()))
-
             item_frame = ttk.LabelFrame(scrollable_frame, text=display_name, padding='5')
             item_frame.pack(fill='x', pady=5)
             item_frame.columnconfigure(0, weight=1)
-
             if isinstance(value, bool):
                 var = tk.BooleanVar(value=value)
                 ttk.Checkbutton(item_frame, variable=var, text='Enabled').pack(anchor='w')
@@ -2671,13 +2653,55 @@ class HookLineSinkerUI:
                 var = tk.StringVar(value=str(value))
                 ttk.Entry(item_frame, textvariable=var).pack(fill='x')
             config_vars[key] = (var, type(value))
-
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=2, column=0, sticky='ew', pady=(10, 0))
         button_frame.columnconfigure(0, weight=1)
+        def save_config():
+            try:
+                new_config = {}
+                for k, (var, value_type) in config_vars.items():
+                    if value_type == bool:
+                        new_config[k] = var.get()
+                    elif value_type in (int, float):
+                        try:
+                            new_config[k] = value_type(var.get())
+                        except ValueError:
+                            raise ValueError(f"Invalid {value_type.__name__} value for {k}")
+                    elif value_type == list:
+                        try:
+                            values = [v.strip() for v in var.get().split(",")]
+                            new_config[k] = [v for v in values if v]
+                        except Exception:
+                            raise ValueError(f"Invalid array value for {k}")
+                    elif value_type == dict:
+                        try:
+                            new_config[k] = json.loads(var.get("1.0", tk.END))
+                        except json.JSONDecodeError:
+                            raise ValueError(f"Invalid JSON object for {k}")
+                    else:
+                        new_config[k] = var.get()
 
-        ttk.Button(button_frame, text='Save', command=lambda: self.save_config(config_vars, config_path)).pack(side='right')
-        ttk.Button(button_frame, text='Cancel', command=editor_window.destroy).pack(side='right', padx=(0, 5))
+                with open(config_path, 'w') as f:
+                    json.dump(new_config, f, indent=2)
+                messagebox.showinfo("Success", f"Configuration for {mod_name} has been updated.")
+                editor_window.destroy()
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save configuration: {str(e)}")
+
+        def restore_defaults():
+            if messagebox.askyesno("Restore Defaults", 
+                                 "Are you sure you want to restore defaults? This is irreversible!"):
+                try:
+                    os.remove(config_path)
+                    messagebox.showinfo("Success", 
+                                      "Configuration has been reset. Please restart your game for the defaults to take effect.")
+                    editor_window.destroy()
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to restore defaults: {str(e)}")
+
+        ttk.Button(button_frame, text="Save", command=save_config, style='Accent.TButton').pack(side="left", padx=5)
+        ttk.Button(button_frame, text="Restore Defaults", command=restore_defaults).pack(side="left")
+        ttk.Button(button_frame, text="Cancel", command=editor_window.destroy).pack(side="right", padx=5)
 
 
     def show_context_menu(self, event):
@@ -2989,6 +3013,7 @@ class HookLineSinkerUI:
         dialog = tk.Toplevel(self.root)
         dialog.title('Select Version')
         dialog.geometry('300x400')
+        dialog.configure(bg=self.dark_mode_colors['bg'])
         dialog.transient(self.root)
         dialog.grab_set()
         icon_path = get_resource_path('images/icon.ico')
@@ -3000,8 +3025,8 @@ class HookLineSinkerUI:
         x = dialog.winfo_screenwidth() // 2 - width // 2
         y = dialog.winfo_screenheight() // 2 - height // 2
         dialog.geometry(f'{width}x{height}+{x}+{y}')
-        ttk.Label(dialog, text='Select version to install:').pack(pady=10, padx=10)
-        version_listbox = tk.Listbox(dialog, width=40, height=15)
+        ttk.Label(dialog, text='Select version to install:', background=self.dark_mode_colors['bg'], foreground='white').pack(pady=10, padx=10)
+        version_listbox = tk.Listbox(dialog, width=40, height=15, relief=tk.FLAT, bg=self.dark_mode_colors['bg'], fg='white', selectbackground='white', selectforeground='black')
         version_listbox.pack(pady=5, padx=10, fill=tk.BOTH, expand=True)
         current_version = selected_mod.get('version', 'Unknown')
         for version in versions:
@@ -3010,17 +3035,36 @@ class HookLineSinkerUI:
             if version_number == current_version:
                 display_text += ' (Current)'
             version_listbox.insert(tk.END, display_text)
+        last_hovered_index = [-1]
 
-        def on_select():
-            selection = version_listbox.curselection()
-            if selection:
-                selected_version = versions[selection[0]]
-                dialog.destroy()
-                self.install_specific_version(selected_mod, selected_version)
+        def on_listbox_hover(event):
+            widget = event.widget
+            current_index = widget.nearest(event.y)
+            if last_hovered_index[0] != current_index:
+                if 0 <= last_hovered_index[0] < widget.size():
+                    widget.itemconfig(last_hovered_index[0], bg=self.dark_mode_colors['bg'], fg='white')
+                widget.itemconfig(current_index, bg='white', fg='black')
+                last_hovered_index[0] = current_index
+
+        def reset_listbox_colors(event):
+            widget = event.widget
+            for i in range(widget.size()):
+                if i not in widget.curselection():
+                    widget.itemconfig(i, bg=self.dark_mode_colors['bg'], fg='white')
+            last_hovered_index[0] = -1
+        version_listbox.bind('<Motion>', on_listbox_hover)
+        version_listbox.bind('<Leave>', reset_listbox_colors)
         button_frame = ttk.Frame(dialog)
         button_frame.pack(pady=10, padx=10, fill=tk.X)
-        ttk.Button(button_frame, text='Install', command=on_select).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text='Install', command=lambda: on_select(version_listbox, dialog, selected_mod, versions)).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='Cancel', command=dialog.destroy).pack(side=tk.RIGHT, padx=5)
+
+        def on_select(listbox, parent, mod, all_versions):
+            selection = listbox.curselection()
+            if selection:
+                selected_version = all_versions[selection[0]]
+                parent.destroy()
+                self.install_specific_version(mod, selected_version)
 
     def show_discord_prompt(self):
         if not self.settings.get('discord_prompt_shown2', False):
@@ -3271,31 +3315,18 @@ class HookLineSinkerUI:
         logging.info('Settings saved:', self.settings)
 
     def refresh_mod_lists(self):
-        if hasattr(self, 'available_listbox'):
-            current_items = list(self.available_listbox.get(0, tk.END))
-            if not current_items:
-                self.load_available_mods()
+        if not self.available_listbox.get(0, tk.END):
+            self.load_available_mods()
         self.installed_mods = self.get_installed_mods()
-        if hasattr(self, 'installed_listbox'):
-            self.installed_listbox.delete(0, tk.END)
-            for mod in self.installed_mods:
-                status = '✅' if mod.get('enabled', True) else '❌'
-                third_party = '[3rd] ' if mod.get('third_party', False) else ''
-                display_title = self.get_display_name(mod['title'])
-                display_text = f'{status} {third_party}{display_title}'.strip()
-                self.installed_listbox.insert(tk.END, display_text)
-            if hasattr(self, 'installed_frame'):
-                self.installed_frame.configure(text=f'Installed Mods ({len(self.installed_mods)})')
+        self.installed_listbox.delete(0, tk.END)
+        for mod in self.installed_mods:
+            display_text = f"{'✅' if mod.get('enabled', True) else '❌'} {'[3rd]' if mod.get('third_party', False) else ''} {self.get_display_name(mod['title'])}".strip()
+            self.installed_listbox.insert(tk.END, display_text)
+        self.installed_frame.configure(text=f"Installed Mods ({len(self.installed_mods)})")
         self.save_mod_cache()
         self.filter_available_mods()
         self.filter_installed_mods()
-        if hasattr(self, 'available_frame'):
-            visible_mods = self.available_listbox.size()
-            total_mods = len(self.available_mods)
-            if visible_mods != total_mods:
-                self.available_frame.configure(text=f'Thunderstore Mods ({visible_mods}/{total_mods})')
-            else:
-                self.available_frame.configure(text=f'Thunderstore Mods ({total_mods})')
+        self.available_frame.configure(text=f"Thunderstore Mods ({self.available_listbox.size()}/{len(self.available_mods)})")
 
     def clean_mod_cache(self):
         updated_cache = {mod_id: mod_info for mod_id, mod_info in self.mod_cache.items() if self.mod_exists({'id': mod_id, 'third_party': mod_info.get('third_party', False)})}
@@ -3358,7 +3389,7 @@ class HookLineSinkerUI:
                         raise
                 logging.info(f"Downloading mod {mod['title']} ({file_size / 1024 / 1024:.1f}MB)")
                 if file_size > 52428800:
-                    warning_msg = f"WARNING: {mod['title']} is {file_size / 1024 / 1024:.1f}MB which exceeds the recommended 50MB limit.\n\nThis is unusually large for a mod. Large mods are not recommended as they may:\n\n• Take a long time to download\n• Use excessive system memory\n• Cause Hook, Line, Sinker to stop responding\n\nConsider finding a smaller alternative mod.\n\nDo you want to continue anyway?"
+                    warning_msg = f"WARNING: {mod['title']} is {file_size / 1024 / 1024:.1f}MB which exceeds the recommended 50MB limit.\n\nThis is unusually large for a mod. Large mods are not recommended as they may:\n\n• Take a long time to download\n• Use excessive system memory\n• Cause Buoy to stop responding\n\nConsider finding a smaller alternative mod.\n\nDo you want to continue anyway?"
                     if not messagebox.askyesno('Excessive File Size', warning_msg, icon='warning'):
                         raise ValueError('Download cancelled - file too large')
                 retry_count = 0
@@ -3538,11 +3569,10 @@ class HookLineSinkerUI:
 
     def check_for_updates(self, silent=False):
         try:
-            self.set_status_safe("Checking for mod and GDWeave updates...")
+            self.set_status_safe('Checking for mod and GDWeave updates...')
             updates_available = False
-
             if not self.installed_mods:
-                self.set_status_safe("No mods installed. Skipping mod update check.")
+                self.set_status_safe('No mods installed. Skipping mod update check.')
             else:
                 mods_to_update = []
                 for installed_mod in self.installed_mods:
@@ -3551,50 +3581,43 @@ class HookLineSinkerUI:
                             try:
                                 if self.is_update_available(installed_mod, available_mod):
                                     updates_available = True
-                                    mods_to_update.append({
-                                        'installed': installed_mod,
-                                        'available': available_mod
-                                    })
+                                    mods_to_update.append({'installed': installed_mod, 'available': available_mod})
                             except Exception as e:
                                 error_message = f"Error checking update for mod {installed_mod['title']}: {str(e)}"
                                 self.set_status_safe(error_message)
                             break
-
                 if mods_to_update:
-                    # Create a GUI to let the user select which mods to update
                     update_window = tk.Toplevel(self.root)
-                    update_window.title("Updates Available")
+                    update_window.title('Updates Available')
                     update_window.geometry('600x600')
                     icon_path = get_resource_path('images/icon.ico')
                     update_window.configure(bg=self.dark_mode_colors['bg'])
-
-                    # Create a listbox to display the mods that need updating
                     mods_listbox = tk.Listbox(update_window, selectmode=tk.MULTIPLE, bg=self.dark_mode_colors['bg'], fg=self.dark_mode_colors['fg'])
-                    mods_listbox.pack(fill="both", expand=True)
-
-                    # Add the mods to the listbox
+                    mods_listbox.pack(fill='both', expand=True)
                     for mod in mods_to_update:
                         installed = mod['installed']
                         available = mod['available']
-                        mods_listbox.insert("end", f"{installed['title']} (Current version: {installed.get('version', 'Unknown')}, New version: {available.get('version', 'Unknown')})")
+                        mods_listbox.insert('end', f"{installed['title']} (Current version: {installed.get('version', 'Unknown')}, New version: {available.get('version', 'Unknown')})")
 
-                    # Create a button to update the selected mods
                     def update_selected_mods():
                         selected_mods = mods_listbox.curselection()
                         for index in selected_mods:
                             mod = mods_to_update[index]
                             self.download_and_install_mod(mod['available'])
                         update_window.destroy()
-
-                    update_button = tk.Button(update_window, text="Update Selected Mods", command=update_selected_mods, bg=self.dark_mode_colors['button_bg'], fg=self.dark_mode_colors['button_fg'])
+                    update_button = tk.Button(update_window, text='Update Selected Mods', command=update_selected_mods, bg=self.dark_mode_colors['button_bg'], fg=self.dark_mode_colors['button_fg'])
                     update_button.pack(pady=10, padx=10)
-
-                    # Create a button to cancel the update
-                    cancel_button = tk.Button(update_window, text="Cancel", command=update_window.destroy, bg=self.dark_mode_colors['button_bg'], fg=self.dark_mode_colors['button_fg'])
+                    cancel_button = tk.Button(update_window, text='Cancel', command=update_window.destroy, bg=self.dark_mode_colors['button_bg'], fg=self.dark_mode_colors['button_fg'])
                     cancel_button.pack(pady=10, padx=10)
+                else:
+                    # Show a message when no updates are available
+                    if not silent:
+                        tk.messagebox.showinfo("No Updates", "All installed mods are up to date.")
+                    self.set_status_safe("All installed mods are up to date.")
         except Exception as e:
-            error_message = f"Error checking for updates: {str(e)}"
+            error_message = f'Error checking for updates: {str(e)}'
             self.set_status_safe(error_message)
+
 
     def is_update_available(self, installed_mod, available_mod):
         """Check if an update is available for a mod"""
@@ -3602,63 +3625,52 @@ class HookLineSinkerUI:
             mod_id = installed_mod.get('thunderstore_id')
             if not mod_id:
                 return False
-                
             blacklisted = self.settings.get('blacklisted_versions', {}).get(mod_id, [])
             if available_mod.get('version') in blacklisted:
-                logging.info(f"Skipping blacklisted version {available_mod.get('version')} "
-                            f"for {installed_mod.get('title')}")
+                logging.info(f"Skipping blacklisted version {available_mod.get('version')} for {installed_mod.get('title')}")
                 return False
-            
             logging.info(f"Checking for updates - installed mod: {installed_mod.get('title')}, available mod: {available_mod.get('title')}")
-            
+
             def get_base_id(thunderstore_id):
                 if not thunderstore_id:
-                    logging.debug(f"No thunderstore_id provided")
+                    logging.debug(f'No thunderstore_id provided')
                     return ''
-                version_pattern = r'-\d+\.\d+\.\d+$'
+                version_pattern = '-\\d+\\.\\d+\\.\\d+$'
                 base_id = re.sub(version_pattern, '', thunderstore_id)
                 logging.debug(f"Converting thunderstore_id '{thunderstore_id}' to base_id '{base_id}'")
                 return base_id
-                
             installed_base_id = get_base_id(installed_mod.get('thunderstore_id', ''))
             available_base_id = get_base_id(available_mod.get('thunderstore_id', ''))
-            
-            logging.info(f"Comparing base IDs - Installed: {installed_base_id}, Available: {available_base_id}")
-            
+            logging.info(f'Comparing base IDs - Installed: {installed_base_id}, Available: {available_base_id}')
             if not installed_base_id or not available_base_id or installed_base_id != available_base_id:
-                logging.info("No update needed - Different or missing thunderstore IDs")
+                logging.info('No update needed - Different or missing thunderstore IDs')
                 return False
-                
+
             def parse_version(version_str):
-                logging.debug(f"Parsing version string: {version_str}")
-                match = re.search(r'(\d+)\.(\d+)\.(\d+)', version_str or '0.0.0')
+                logging.debug(f'Parsing version string: {version_str}')
+                match = re.search('(\\d+)\\.(\\d+)\\.(\\d+)', version_str or '0.0.0')
                 if not match:
-                    logging.debug("No version match found, using default [0,0,0]")
+                    logging.debug('No version match found, using default [0,0,0]')
                     return [0, 0, 0]
                 version = [int(x) for x in match.groups()]
-                logging.debug(f"Parsed version: {version}")
+                logging.debug(f'Parsed version: {version}')
                 return version
-                
             installed_version = parse_version(installed_mod.get('version'))
             available_version = parse_version(available_mod.get('version'))
-            
-            logging.info(f"Comparing versions - Installed: {installed_version}, Available: {available_version}")
-            
+            logging.info(f'Comparing versions - Installed: {installed_version}, Available: {available_version}')
             for i in range(3):
                 if available_version[i] > installed_version[i]:
-                    logging.info(f"Update available - Component {i} is newer ({available_version[i]} > {installed_version[i]})")
+                    logging.info(f'Update available - Component {i} is newer ({available_version[i]} > {installed_version[i]})')
                     return True
                 elif available_version[i] < installed_version[i]:
-                    logging.info(f"No update needed - Component {i} is older ({available_version[i]} < {installed_version[i]})")
+                    logging.info(f'No update needed - Component {i} is older ({available_version[i]} < {installed_version[i]})')
                     return False
-            
-            logging.info("No update needed - Versions are identical")
+            logging.info('No update needed - Versions are identical')
             return False
-            
         except Exception as e:
             error_msg = f"Error checking update for mod {installed_mod.get('title')}: {str(e)}"
             logging.error(error_msg)
-            logging.error(f"Full traceback: {traceback.format_exc()}")
+            logging.error(f'Full traceback: {traceback.format_exc()}')
             return False
 
     def save_mod_cache(self):
@@ -3832,8 +3844,7 @@ class HookLineSinkerUI:
                         mod_info = json.load(f)
                         mod_info['third_party'] = True
                         self.available_mods.append(mod_info)
-                        
 if __name__ == '__main__':
     root = tk.Tk()
-    app = HookLineSinkerUI(root)
+    app = BuoyUI(root)
     root.mainloop()

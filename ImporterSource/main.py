@@ -8,7 +8,7 @@ if not localappdata_path:
     exit(1)
 
 source_dir = os.path.join(localappdata_path, r'PyoidTM\Hook_Line_Sinker')
-destination_dir = os.path.join(localappdata_path, r'PawsHLSR\Hook_Line_Sinker_Reborn')
+destination_dir = os.path.join(localappdata_path, r'PawsHLSR\Hook_Line_Sinker_Reborn') # This is still named this way to avoid breaking existing users
 
 if not os.path.exists(source_dir):
     print(f"Source directory {source_dir} does not exist.")
@@ -36,7 +36,7 @@ for item in os.listdir(source_dir):
         success = False
 
 if success:
-    print("\nSuccess! Your Hook, Line, and Sinker data has been imported to HLS: Reborn!")
+    print("\nSuccess! Your Hook, Line, and Sinker data has been imported to Buoy!")
     input()
 else:
     print("\nUh-oh! Some fish wriggled free and escaped the net. Try again or contact the developers on Discord!")

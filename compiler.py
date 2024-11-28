@@ -29,13 +29,12 @@ def compile_with_pyinstaller():
     sanitized_version = version.replace(" ", "_").replace("/", "_")
     output_name = f"Buoy_v{sanitized_version}"
 
-    # Command for PyInstaller with corrected path formats for Windows
     command = [
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--noconsole",
-        f"--add-data={images_dir};images",  # Windows-specific path separator
-        f"--add-data={version_file};.",  # Bundles the version file
+        f"--add-data={images_dir};images",
+        f"--add-data={version_file};.",
         f"--icon={icon_path}",
         "--name", output_name,
         script_file
