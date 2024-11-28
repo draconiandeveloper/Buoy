@@ -1,6 +1,5 @@
 appdirs==1.4.4
 packaging==24.2
-Pillow==9.5.0
 Pillow==11.0.0
 python-dotenv==1.0.1
 pywinstyles==1.8

@@ -149,9 +149,12 @@ class BuoyUI:
         self.show_nsfw = tk.BooleanVar(value=self.settings.get('show_nsfw', False))
         self.show_deprecated = tk.BooleanVar(value=self.settings.get('show_deprecated', False))
         self.game_path_entry = tk.StringVar(value=self.settings.get('game_path', ''))
-        self.analytics_enabled = tk.BooleanVar(value=self.settings.get('analytics_enabled', True))
         logging.info(f'Initial game path: {self.game_path_entry.get()}')
         self.create_status_bar()
+        self.notebook = None
+        self.mod_limit_disabled = False
+        self.create_rotating_backup()
+        logging.info('Made rotating backup')
         self.create_main_ui()
         if self.dark_mode.get():
             self.toggle_dark_mode(show_restart_prompt=False)
@@ -3307,7 +3310,7 @@ class BuoyUI:
         self.print_settings()
 
     def save_settings(self):
-        self.settings.update({'auto_update': self.auto_update.get(), 'windowed_mode': self.windowed_mode.get(), 'notifications': self.notifications.get(), 'theme': self.theme.get(), 'game_path': self.game_path_entry.get(), 'show_nsfw': self.show_nsfw.get(), 'show_deprecated': self.show_deprecated.get(), 'auto_backup': self.auto_backup.get(), 'suppress_mod_warning': self.suppress_mod_warning.get(), 'analytics_enabled': self.analytics_enabled.get()})
+        self.settings.update({'auto_update': self.auto_update.get(), 'windowed_mode': self.windowed_mode.get(), 'notifications': self.notifications.get(), 'theme': self.theme.get(), 'game_path': self.game_path_entry.get(), 'show_nsfw': self.show_nsfw.get(), 'show_deprecated': self.show_deprecated.get(), 'auto_backup': self.auto_backup.get(), 'suppress_mod_warning': self.suppress_mod_warning.get()})
         settings_path = os.path.join(self.app_data_dir, 'settings.json')
         with open(settings_path, 'w') as f:
             json.dump(self.settings, f)
