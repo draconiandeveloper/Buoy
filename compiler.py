@@ -1,7 +1,12 @@
 import os
 import subprocess
+import shutil
 import sys
 import json
+
+SEP = ':'
+if sys.platform == 'win32':
+    SEP = ';'
 
 def get_version(version_file):
     try:
@@ -33,8 +38,8 @@ def compile_with_pyinstaller():
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--noconsole",
-        f"--add-data={images_dir};images",
-        f"--add-data={version_file};.",
+        f"--add-data={images_dir}{SEP}images",
+        f"--add-data={version_file}{SEP}.",
         f"--icon={icon_path}",
         "--name", output_name,
         script_file
@@ -53,3 +58,14 @@ def bundled_file_path(relative_path):
 
 if __name__ == "__main__":
     compile_with_pyinstaller()
+
+    dist_dir = os.path.join(os.getcwd(), 'dist')
+    if not os.path.exists(dist_dir):
+        exit(0) # We are to assume that the build process failed.
+
+    shutil.copy(os.path.join(os.getcwd(), 'version.json'), dist_dir)
+
+    if sys.platform == 'win32':
+        shutil.copytree(os.path.join(os.getcwd(), 'images'), dist_dir)
+    else:
+        shutil.copy(os.path.join(os.getcwd(), 'icon.png'), dist_dir)

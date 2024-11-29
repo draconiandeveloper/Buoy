@@ -24,13 +24,59 @@ import tkinter as tk
 from dotenv import load_dotenv
 from PIL import Image, ImageTk
 from tkinter import ttk, filedialog, messagebox, simpledialog
+
+try:
+    import pywinstyles
+except ImportError: # This occurs if we are on Linux/BSD/macOS or if we don't have PyWinStyles installed.
+    pass            # It's not like we really need PyWinStyles at the moment...
+
 load_dotenv()
+
+#
+# Since non-Windows OSes don't have environment variables set by default 
+#  for APPDATA and LOCALAPPDATA, we will need to settle for our own. 
+#
+def get_godot_path():
+    if sys.platform == 'win32':
+        return os.path.join(os.getenv('APPDATA'), 'Godot')
+    
+    # Set the Steam WINE path for %APPDATA% for Linux
+    return os.path.join(os.getenv('HOME'), '.local', 'share', 'Steam', 'steamapps', 'compatdata', '3146520', 'pfx', 'drive_c', 'users', 'steamuser', 'AppData', 'Roaming', 'Godot')
+
+#
+# Get Buoy's temporary file path on both Windows and Linux.
+#
+def get_temp_path():
+    if sys.platform == 'win32':
+        return os.path.join(os.getenv('APPDATA'), 'Hook_Line_Sinker_Reborn', 'temp')
+    
+    return os.path.join(os.getenv('HOME'), '.local', 'share', 'Hook_Line_Sinker_Reborn', 'temp')
+
 
 def get_resource_path(filename):
     if getattr(sys, 'frozen', False):
         return os.path.join(os.path.dirname(sys.executable), filename)
     else:
         return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+
+
+#
+# Tkinter on Linux does not natively support ICO files, so here's a workaround.
+#
+def get_icon(tkwin, logging=None):
+    icon_path = get_resource_path('images/icon.png')
+    if sys.platform == 'win32':
+        icon_path = get_resource_path('images/icon.ico')
+    
+    if os.path.exists(icon_path):
+        if platform.system() == 'Windows':
+            tkwin.iconbitmap(icon_path)
+        elif platform.system() == 'Linux':
+            img = tk.PhotoImage(file=icon_path)
+            tkwin.tk.call('wm', 'iconphoto', tkwin._w, img)
+    else:
+        if logging is not None:
+            logging.info('Warning: icon not found')
 
 class LoggerWriter:
 
@@ -112,15 +158,7 @@ class BuoyUI:
             y = (screen_height - window_height) // 2
             self.root.geometry(f'{window_width}x{window_height}+{x}+{y}')
         self.root.minsize(800, 640)
-        icon_path = get_resource_path('images/icon.ico')
-        if os.path.exists(icon_path):
-            if platform.system() == 'Windows':
-                self.root.iconbitmap(icon_path)
-            elif platform.system() == 'Linux':
-                img = tk.PhotoImage(file=icon_path)
-                self.root.tk.call('wm', 'iconphoto', self.root._w, img)
-        else:
-            logging.info('Warning: icon.ico not found')
+        icon_path = get_icon(self.root, logging)
         self.app_data_dir = appdirs.user_data_dir('Hook_Line_Sinker_Reborn', 'PawsHLSR')
         self.mods_dir = os.path.join(self.app_data_dir, 'mods')
         self.mod_cache_file = os.path.join(self.app_data_dir, 'mod_cache.json')
@@ -292,9 +330,7 @@ class BuoyUI:
             log_window.title('Buoy Log')
             log_window.geometry('800x600')
             log_window.configure(background=self.dark_mode_colors['bg'])
-            icon_path = get_resource_path('images/icon.ico')
-            if os.path.exists(icon_path):
-                log_window.iconbitmap(icon_path)
+            icon_path = get_icon(log_window)
             main_frame = ttk.Frame(log_window)
             main_frame.pack(expand=True, fill='both', padx=5, pady=5)
             main_frame.grid_columnconfigure(0, weight=1)
@@ -327,9 +363,7 @@ class BuoyUI:
             log_window.title('Full Buoy Log')
             log_window.geometry('800x600')
             log_window.configure(background=self.dark_mode_colors['bg'])
-            icon_path = get_resource_path('images/icon.ico')
-            if os.path.exists(icon_path):
-                log_window.iconbitmap(icon_path)
+            icon_path = get_icon(log_window)
             main_frame = ttk.Frame(log_window)
             main_frame.pack(expand=True, fill='both', padx=5, pady=5)
             main_frame.grid_columnconfigure(0, weight=1)
@@ -660,9 +694,7 @@ class BuoyUI:
         modpack_window.title('Create Mod Profile')
         modpack_window.geometry('800x600')
         modpack_window.configure(bg='#2b2b2b')
-        icon_path = get_resource_path('images/icon.ico')
-        if os.path.exists(icon_path):
-            modpack_window.iconbitmap(icon_path)
+        icon_path = get_icon(modpack_window)
         modpack_window.grid_columnconfigure(0, weight=1)
         modpack_window.grid_columnconfigure(1, weight=1)
         modpack_window.grid_rowconfigure(1, weight=1)
@@ -1206,15 +1238,16 @@ class BuoyUI:
             messagebox.showinfo('Setup Required', 'Please follow all the steps for installation in the Buoy Setup tab.')
             self.notebook.select(3)
             return
-        if not self.settings.get('game_path'):
-            messagebox.showerror('Error', 'Game path not set. Please set the game path first.')
-            return
+        #if not self.settings.get('game_path'):
+        #    messagebox.showerror('Error', 'Game path not set. Please set the game path first.')
+        #    return
         try:
-            game_exe = os.path.join(self.settings['game_path'], 'webfishing.exe')
-            if not os.path.exists(game_exe):
-                messagebox.showerror('Error', 'Game executable not found.')
-                return
-            subprocess.Popen([game_exe])
+            #game_exe = os.path.join(self.settings['game_path'], 'webfishing.exe')
+            #if not os.path.exists(game_exe):
+            #    messagebox.showerror('Error', 'Game executable not found.')
+            #    return
+            #subprocess.Popen([game_exe])
+            subprocess.Popen(['steam', '-applaunch', '3146520'])
             self.set_status('Game launched with mods')
         except Exception as e:
             error_message = f'Failed to launch game: {str(e)}'
@@ -1227,15 +1260,16 @@ class BuoyUI:
             messagebox.showinfo('Setup Required', 'Please follow all the steps for installation in the Buoy Setup tab.')
             self.notebook.select(3)
             return
-        if not self.settings.get('game_path'):
-            messagebox.showerror('Error', 'Game path not set. Please set the game path first.')
-            return
+        #if not self.settings.get('game_path'):
+        #    messagebox.showerror('Error', 'Game path not set. Please set the game path first.')
+        #    return
         try:
-            game_exe = os.path.join(self.settings['game_path'], 'webfishing.exe')
-            if not os.path.exists(game_exe):
-                messagebox.showerror('Error', 'Game executable not found.')
-                return
-            subprocess.Popen([game_exe, '--gdweave-disable'])
+            #game_exe = os.path.join(self.settings['game_path'], 'webfishing.exe')
+            #if not os.path.exists(game_exe):
+            #    messagebox.showerror('Error', 'Game executable not found.')
+            #    return
+            #subprocess.Popen([game_exe, '--gdweave-disable'])
+            subprocess.Popen(['steam', '-applaunch', '3146520', '--gdweave-disable'])
             self.set_status('Launched game in vanilla mode')
         except Exception as e:
             error_msg = f'Failed to launch game: {str(e)}'
@@ -1250,7 +1284,7 @@ class BuoyUI:
         title_label.grid(row=0, column=0, pady=(20, 5), padx=20, sticky='w')
         subtitle_label = ttk.Label(game_manager_frame, text='Backup and restore your game progress', font=('Helvetica', 10, 'italic'))
         subtitle_label.grid(row=1, column=0, pady=(0, 10), padx=20, sticky='w')
-        save_path = os.path.join(os.getenv('APPDATA'), 'Godot', 'app_userdata', 'webfishing_2_newver')
+        save_path = os.path.join(get_godot_path(), 'app_userdata', 'webfishing_2_newver')
         save_location_frame = ttk.Frame(game_manager_frame)
         save_location_frame.grid(row=2, column=0, pady=(0, 10), padx=20, sticky='ew')
         ttk.Label(save_location_frame, text='Save folder location:').pack(side='left')
@@ -1338,7 +1372,7 @@ class BuoyUI:
             self.set_status('Backup creation failed: Invalid name')
             return
         selected_slot = self.backup_slot_var.get()
-        save_dir = os.path.join(os.getenv('APPDATA'), 'Godot', 'app_userdata', 'webfishing_2_newver')
+        save_dir = os.path.join(get_godot_path(), 'app_userdata', 'webfishing_2_newver')
         save_path = os.path.join(save_dir, f'webfishing_save_slot_{selected_slot - 1}.sav')
         if not os.path.exists(save_path):
             messagebox.showerror('Error', f'No save file found in slot {selected_slot}. Please create a save in-game first.')
@@ -1379,7 +1413,7 @@ class BuoyUI:
             slot_num = int(slot_match.group(1))
             if not messagebox.askyesno('Confirm Restore', f'This will restore to Slot {slot_num}. Continue?'):
                 return
-            save_dir = os.path.join(os.getenv('APPDATA'), 'Godot', 'app_userdata', 'webfishing_2_newver')
+            save_dir = os.path.join(get_godot_path(), 'app_userdata', 'webfishing_2_newver')
             backup_path = os.path.join(backup_dir, backup_filename)
             save_path = os.path.join(save_dir, f'webfishing_save_slot_{slot_num - 1}.sav')
             try:
@@ -1397,9 +1431,7 @@ class BuoyUI:
             dialog.geometry('400x300')
             dialog.transient(self.root)
             dialog.grab_set()
-            icon_path = get_resource_path('images/icon.ico')
-            if os.path.exists(icon_path):
-                dialog.iconbitmap(icon_path)
+            icon_path = get_icon(dialog)
             dialog.update_idletasks()
             width = dialog.winfo_width()
             height = dialog.winfo_height()
@@ -1416,7 +1448,7 @@ class BuoyUI:
                     messagebox.showwarning('Acknowledgment Required', 'You must check the box to acknowledge you understand the risks.')
                     return
                 dialog.destroy()
-                save_dir = os.path.join(os.getenv('APPDATA'), 'Godot', 'app_userdata', 'webfishing_2_newver')
+                save_dir = os.path.join(get_godot_path(), 'app_userdata', 'webfishing_2_newver')
                 for slot in range(4):
                     save_path = os.path.join(save_dir, f'webfishing_save_slot_{slot}.sav')
                     if os.path.exists(save_path):
@@ -1457,7 +1489,7 @@ class BuoyUI:
             dialog.wait_window()
 
     def get_available_save_slots(self):
-        save_dir = os.path.join(os.getenv('APPDATA'), 'Godot', 'app_userdata', 'webfishing_2_newver')
+        save_dir = os.path.join(get_godot_path(), 'app_userdata', 'webfishing_2_newver')
         available_slots = []
         for slot in range(1, 5):
             save_path = os.path.join(save_dir, f'webfishing_save_slot_{slot - 1}.sav')
@@ -1784,7 +1816,7 @@ class BuoyUI:
                     logging.error(f'Failed to remove old backup for slot {slot}: {e}')
                     break
         timestamp = int(time.time())
-        save_dir = os.path.join(os.getenv('APPDATA'), 'Godot', 'app_userdata', 'webfishing_2_newver')
+        save_dir = os.path.join(get_godot_path(), 'app_userdata', 'webfishing_2_newver')
         logging.info(f'Creating automatic backups in directory: {save_dir}')
         for slot in available_slots:
             save_path = os.path.join(save_dir, f'webfishing_save_slot_{slot - 1}.sav')
@@ -1805,7 +1837,7 @@ class BuoyUI:
         if not self.settings.get('game_path'):
             logging.info('Game path not set, skipping existing mod copy.')
             return
-        gdweave_mods_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods')
+        gdweave_mods_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods' if sys.platform == 'win32' else 'mods')
         if not os.path.exists(gdweave_mods_path):
             logging.info('GDWeave Mods folder not found, skipping existing mod copy.')
             return
@@ -1855,7 +1887,7 @@ class BuoyUI:
         self.refresh_mod_lists()
 
     def delete_temp_files(self):
-        temp_dir = os.path.join(os.getenv('APPDATA'), 'Hook_Line_Sinker_Reborn', 'temp')
+        temp_dir = get_temp_path()
         if os.path.exists(temp_dir):
             try:
                 for root, dirs, files in os.walk(temp_dir, topdown=False):
@@ -1891,14 +1923,17 @@ class BuoyUI:
     def download_and_run_dotnet_installer(self):
         self.set_status('Downloading .NET installer...')
         messagebox.showinfo('Downloading .NET', 'This will download the .NET 8.0 SDK installer. Please wait 10-20 seconds.')
-        if not sys.platform.startswith('win'):
-            messagebox.showerror('Unsupported OS', 'Your operating system is not supported for automatic .NET installation.')
+
+        if sys.platform.startswith('linux'):
+            os.environ['WINEPREFIX'] = os.path.join(os.getenv('HOME'), '.local', 'share', 'Steam', 'steamapps', 'compatdata', '3146520', 'pfx')
+            subprocess.Popen(['winetricks', 'dotnet8'])
             return
+
         url = 'https://download.visualstudio.microsoft.com/download/pr/6224f00f-08da-4e7f-85b1-00d42c2bb3d3/b775de636b91e023574a0bbc291f705a/dotnet-sdk-8.0.403-win-x64.exe'
 
         def download_and_install():
             try:
-                temp_dir = os.path.join(os.getenv('APPDATA'), 'Hook_line_Sinker_Reborn', 'temp')
+                temp_dir = get_temp_path()
                 os.makedirs(temp_dir, exist_ok=True)
                 with requests.get(url, stream=True) as response:
                     response.raise_for_status()
@@ -2233,14 +2268,14 @@ class BuoyUI:
         game_path = self.settings['game_path']
         gdweave_path = os.path.join(game_path, 'GDWeave')
         try:
-            temp_dir = os.path.join(os.getenv('APPDATA'), 'Hook_Line_Sinker_Reborn', 'temp')
+            temp_dir = get_temp_path()
             os.makedirs(temp_dir, exist_ok=True)
             temp_backup_dir = os.path.join(temp_dir, f'gdweave_backup_{int(time.time())}')
             os.makedirs(temp_backup_dir, exist_ok=True)
-            mods_path = os.path.join(gdweave_path, 'Mods')
+            mods_path = os.path.join(gdweave_path, 'Mods' if sys.platform == 'win32' else 'mods')
             configs_path = os.path.join(gdweave_path, 'configs')
             if os.path.exists(mods_path):
-                shutil.copytree(mods_path, os.path.join(temp_backup_dir, 'Mods'))
+                shutil.copytree(mods_path, os.path.join(temp_backup_dir, 'Mods' if sys.platform == 'win32' else 'mods'))
                 logging.info('Backed up Mods folder')
             if os.path.exists(configs_path):
                 shutil.copytree(configs_path, os.path.join(temp_backup_dir, 'configs'))
@@ -2268,8 +2303,8 @@ class BuoyUI:
                 winmm_dst = os.path.join(game_path, 'winmm.dll')
                 logging.info(f'Copying {winmm_src} to {winmm_dst}')
                 shutil.copy2(winmm_src, winmm_dst)
-            if os.path.exists(os.path.join(temp_backup_dir, 'Mods')):
-                shutil.copytree(os.path.join(temp_backup_dir, 'Mods'), os.path.join(gdweave_path, 'Mods'), dirs_exist_ok=True)
+            if os.path.exists(os.path.join(temp_backup_dir, 'Mods' if sys.platform == 'win32' else 'mods')):
+                shutil.copytree(os.path.join(temp_backup_dir, 'Mods' if sys.platform == 'win32' else 'mods'), os.path.join(gdweave_path, 'Mods' if sys.platform == 'win32' else 'mods'), dirs_exist_ok=True)
                 logging.info('Restored Mods folder')
             if os.path.exists(os.path.join(temp_backup_dir, 'configs')):
                 shutil.copytree(os.path.join(temp_backup_dir, 'configs'), os.path.join(gdweave_path, 'configs'), dirs_exist_ok=True)
@@ -2319,7 +2354,7 @@ class BuoyUI:
 
     def update_step2_status(self):
         if self.settings.get('game_path'):
-            exe_path = os.path.join(self.settings['game_path'], 'webfishing.exe' if sys.platform.startswith('win') else 'webfishing.x86_64')
+            exe_path = os.path.join(self.settings['game_path'], 'webfishing.exe')
             if os.path.isfile(exe_path):
                 self.step2_status.config(text='Verified', foreground='green')
             else:
@@ -2433,6 +2468,8 @@ class BuoyUI:
         if os.path.exists(gdweave_path):
             if sys.platform.startswith('win'):
                 os.startfile(gdweave_path)
+            elif sys.platform.startswith('linux'):
+                subprocess.Popen(['xdg-open', gdweave_path])
             else:
                 messagebox.showerror('Error', 'Unsupported operating system')
         else:
@@ -2447,9 +2484,7 @@ class BuoyUI:
             log_window.title('GDWeave Log')
             log_window.geometry('800x600')
             log_window.configure(background=self.dark_mode_colors['bg'])
-            icon_path = get_resource_path('images/icon.ico')
-            if os.path.exists(icon_path):
-                log_window.iconbitmap(icon_path)
+            icon_path = get_icon(log_window)
             log_text = tk.Text(log_window, wrap=tk.NONE, font=('Consolas', 10), bg=self.dark_mode_colors['bg'], fg=self.dark_mode_colors['fg'])
             log_text.pack(expand=True, fill='both')
             log_text.insert(tk.END, log_content)
@@ -2471,7 +2506,7 @@ class BuoyUI:
     def clear_gdweave_mods(self):
         if not messagebox.askyesno('Confirm Clear', "Are you sure you want to remove all mods from the game's mods folder? This action cannot be undone."):
             return
-        gdweave_mods_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods')
+        gdweave_mods_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods' if sys.platform == 'win32' else 'mods')
         if os.path.exists(gdweave_mods_path):
             try:
                 for item in os.listdir(gdweave_mods_path):
@@ -2600,9 +2635,7 @@ class BuoyUI:
         editor_window = tk.Toplevel(self.root)
         editor_window.title(f'Edit Config: {mod_name}')
         editor_window.geometry('600x600')
-        icon_path = get_resource_path('images/icon.ico')
-        if os.path.exists(icon_path):
-            editor_window.iconbitmap(icon_path)
+        icon_path = get_icon(editor_window)
         editor_window.configure(bg='#2b2b2b')
         style = ttk.Style()
         style.configure('MainFrame.TFrame', background='#2b2b2b')
@@ -2768,7 +2801,7 @@ class BuoyUI:
         if not self.settings.get('game_path'):
             messagebox.showerror('Error', 'Game path not set')
             return
-        mod_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods', mod['id'])
+        mod_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods' if sys.platform == 'win32' else 'mods', mod['id'])
         if not os.path.exists(mod_path):
             messagebox.showerror('Error', 'Mod folder not found. Make sure the mod is enabled and installed.')
             return
@@ -2933,7 +2966,7 @@ class BuoyUI:
 
     def copy_third_party_mod_to_game(self, mod):
         src_path = os.path.join(self.mods_dir, '3rd_party', mod['id'])
-        dst_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods', mod['id'])
+        dst_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods' if sys.platform == 'win32' else 'mods', mod['id'])
         shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
         self.set_status(f"Installed 3rd party mod: {mod['title']}")
         self.refresh_mod_lists()
@@ -2958,7 +2991,7 @@ class BuoyUI:
             mod_path = os.path.join(self.mods_dir, mod['id'])
         if os.path.exists(mod_path):
             shutil.rmtree(mod_path)
-        game_mod_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods', mod['id'])
+        game_mod_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods' if sys.platform == 'win32' else 'mods', mod['id'])
         if os.path.exists(game_mod_path):
             shutil.rmtree(game_mod_path)
         self.set_status(f"Uninstalled mod: {mod['title']}")
@@ -3038,9 +3071,7 @@ class BuoyUI:
         dialog.configure(bg=self.dark_mode_colors['bg'])
         dialog.transient(self.root)
         dialog.grab_set()
-        icon_path = get_resource_path('images/icon.ico')
-        if os.path.exists(icon_path):
-            dialog.iconbitmap(icon_path)
+        icon_path = get_icon(dialog)
         dialog.update_idletasks()
         width = dialog.winfo_width()
         height = dialog.winfo_height()
@@ -3300,8 +3331,7 @@ class BuoyUI:
     def verify_installation(self):
         try:
             game_path = self.game_path_entry.get()
-            exe_name = 'webfishing.exe' if platform.system() == 'Windows' else 'webfishing'
-            exe_path = os.path.join(game_path, exe_name)
+            exe_path = os.path.join(game_path, 'webfishing.exe')
             if os.path.exists(game_path) and os.path.isfile(exe_path):
                 self.set_status('Game installation verified successfully!')
             else:
@@ -3625,7 +3655,7 @@ class BuoyUI:
                     update_window = tk.Toplevel(self.root)
                     update_window.title('Updates Available')
                     update_window.geometry('600x600')
-                    icon_path = get_resource_path('images/icon.ico')
+                    icon_path = get_icon(update_window)
                     update_window.configure(bg=self.dark_mode_colors['bg'])
                     mods_listbox = tk.Listbox(update_window, selectmode=tk.MULTIPLE, bg=self.dark_mode_colors['bg'], fg=self.dark_mode_colors['fg'])
                     mods_listbox.pack(fill='both', expand=True)
@@ -3738,7 +3768,7 @@ class BuoyUI:
         if not self.settings.get('game_path'):
             logging.error('Game path not set. Cannot copy mod to game.')
             return
-        destination_dir = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods', mod_id)
+        destination_dir = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods' if sys.platform == 'win32' else 'mods', mod_id)
         logging.info(f'Destination directory: {destination_dir}')
         try:
             if os.path.exists(destination_dir):
@@ -3756,7 +3786,7 @@ class BuoyUI:
             logging.error(traceback.format_exc())
 
     def remove_mod_from_game(self, mod):
-        gdweave_mods_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods')
+        gdweave_mods_path = os.path.join(self.settings['game_path'], 'GDWeave', 'Mods' if sys.platform == 'win32' else 'mods')
         mod_path_in_game = os.path.join(gdweave_mods_path, mod['id'])
         if os.path.exists(mod_path_in_game):
             logging.info(f'Removing mod from game: {mod_path_in_game}')

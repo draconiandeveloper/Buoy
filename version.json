@@ -2,6 +2,7 @@
     "version": "1.0.2",
     "message": "Welcome to Buoy!",
     "changelog": [
-        "Fixed bug when refreshing the mod list that caused any re-enabled mods to create 3rd party duplicates"
+        "Fixed bug when refreshing the mod list that caused any re-enabled mods to create 3rd party duplicates",
+        "Added native Linux build support."
     ]
 }
