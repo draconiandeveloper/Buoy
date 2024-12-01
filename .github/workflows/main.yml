@@ -23,11 +23,10 @@ jobs:
           python compiler.py
       - name: Package executable
         uses: actions/upload-artifact@v4
+        id: artifact_zip
         with:
           name: Buoy-linux
           path: dist/*
-      - name: List paths
-        run: ls -R /home/runner/work/Buoy
       - name: Create release
         uses: actions/create-release@v1
         id: create_release
@@ -45,7 +44,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Buoy-linux.zip
+          asset_path: ${{ steps.artifact_zip.artifact-url }}
           asset_name: Buoy-linux.zip
           asset_content_type: application/zip
   build-windows:
@@ -68,12 +67,11 @@ jobs:
         run: |
           python compiler.py
       - name: Package executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+        id: artifact_zip
         with:
           name: Buoy-windows
           path: dist/*
-      - name: List paths
-        run: tree D:\a\Buoy /f
       - name: Create release
         uses: actions/create-release@v1
         id: create_release
@@ -91,6 +89,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Buoy-windows.zip
+          asset_path: ${{ steps.artifact_zip.artifact-url }}
           asset_name: Buoy-windows.zip
           asset_content_type: application/zip
