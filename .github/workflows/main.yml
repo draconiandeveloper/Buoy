@@ -24,7 +24,27 @@ jobs:
       - name: Package executable
         uses: actions/upload-artifact@v4
         with:
+          name: Buoy-linux
           path: dist/*
+      - name: Create release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload release artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Buoy-linux.zip
+          asset_name: Buoy-linux.zip
+          asset_content_type: application/zip
   build-windows:
     runs-on: windows-latest
     strategy:
@@ -47,4 +67,24 @@ jobs:
       - name: Package executable
         uses: actions/upload-artifact@v3
         with:
+          name: Buoy-win32
           path: dist/*
+      - name: Create release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload release artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Buoy-win32.zip
+          asset_name: Buoy-win32.zip
+          asset_content_type: application/zip
