@@ -64,8 +64,4 @@ if __name__ == "__main__":
         exit(0) # We are to assume that the build process failed.
 
     shutil.copy(os.path.join(os.getcwd(), 'version.json'), dist_dir)
-
-    if sys.platform == 'win32':
-        shutil.copytree(os.path.join(os.getcwd(), 'images'), dist_dir)
-    else:
-        shutil.copy(os.path.join(os.getcwd(), 'icon.png'), dist_dir)
+    shutil.copy(os.path.join(os.getcwd(), 'icon.png'), dist_dir)
