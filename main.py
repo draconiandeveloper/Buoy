@@ -24,6 +24,9 @@ import tkinter as tk
 from dotenv import load_dotenv
 from PIL import Image, ImageTk
 from tkinter import ttk, filedialog, messagebox, simpledialog
+import aiofiles
+import asyncio
+import io
 
 try:
     import pywinstyles
@@ -64,19 +67,46 @@ def get_resource_path(filename):
 # Tkinter on Linux does not natively support ICO files, so here's a workaround.
 #
 def get_icon(tkwin, logging=None):
-    icon_path = get_resource_path('images/icon.png')
-    if sys.platform == 'win32':
-        icon_path = get_resource_path('images/icon.ico')
+    #icon_path = get_resource_path('images/icon.png')
+    icon_path = os.path.join(os.path.dirname(sys.executable), 'icon.png')
+    #if sys.platform == 'win32':
+    #    icon_path = get_resource_path('images/icon.ico')
     
     if os.path.exists(icon_path):
-        if platform.system() == 'Windows':
-            tkwin.iconbitmap(icon_path)
-        elif platform.system() == 'Linux':
-            img = tk.PhotoImage(file=icon_path)
-            tkwin.tk.call('wm', 'iconphoto', tkwin._w, img)
+        #if platform.system() == 'Windows':
+        #    tkwin.iconbitmap(icon_path)
+        #elif platform.system() == 'Linux':
+        img = tk.PhotoImage(file=icon_path)
+        tkwin.tk.call('wm', 'iconphoto', tkwin._w, img)
     else:
         if logging is not None:
             logging.info('Warning: icon not found')
+
+#
+# Asynchronously extract large zip files.
+#
+async def _extract_zip(zfile, destination):
+    zipdata = b''
+    
+    async with aiofiles.open(zfile, 'rb') as fd:
+        zipdata = await fd.read()
+    
+    with zipfile.ZipFile(io.BytesIO(zipdata)) as zfd:
+        for entry in zfd.infolist():
+            xpath = os.path.join(destination, entry.filename)
+
+            if entry.is_dir():
+                os.makedirs(xpath, exist_ok=True)
+            else:
+                async with aiofiles.open(xpath, 'wb') as fd:
+                    await fd.write(zfd.read(entry))
+
+#
+# Call the asynchronous function above.
+#
+def extract_zip(zipfile, destination):
+    asyncio.run(_extract_zip(zipfile, destination))
+
 
 class LoggerWriter:
 
@@ -1988,8 +2018,9 @@ class BuoyUI:
             os.makedirs(import_temp_dir)
             extracted_zip_dir = os.path.join(import_temp_dir, 'extractedzip')
             os.makedirs(extracted_zip_dir)
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(extracted_zip_dir)
+            extract_zip(zip_path, extracted_zip_dir)
+            #with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            #    zip_ref.extractall(extracted_zip_dir)
             manifest_path = self.find_manifest(extracted_zip_dir)
             if not manifest_path:
                 error_msg = 'manifest.json not found in the ZIP file. This may not be a valid mod package.'
@@ -2289,8 +2320,7 @@ class BuoyUI:
             self.set_status('Installing GDWeave...')
             logging.info(f'Zip file downloaded to: {zip_path}')
             extract_path = os.path.join(temp_dir, 'GDWeave_extract')
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(extract_path)
+            extract_zip(zip_path, extract_path)
             logging.info(f'Zip file extracted to: {extract_path}')
             if os.path.exists(gdweave_path):
                 logging.info(f'Removing existing GDWeave folder: {gdweave_path}')
@@ -2298,11 +2328,10 @@ class BuoyUI:
             extracted_gdweave_path = os.path.join(extract_path, 'GDWeave')
             logging.info(f'Moving {extracted_gdweave_path} to {gdweave_path}')
             shutil.move(extracted_gdweave_path, gdweave_path)
-            if sys.platform.startswith('win'):
-                winmm_src = os.path.join(extract_path, 'winmm.dll')
-                winmm_dst = os.path.join(game_path, 'winmm.dll')
-                logging.info(f'Copying {winmm_src} to {winmm_dst}')
-                shutil.copy2(winmm_src, winmm_dst)
+            winmm_src = os.path.join(extract_path, 'winmm.dll')
+            winmm_dst = os.path.join(game_path, 'winmm.dll')
+            logging.info(f'Copying {winmm_src} to {winmm_dst}')
+            shutil.copy2(winmm_src, winmm_dst)
             if os.path.exists(os.path.join(temp_backup_dir, 'Mods' if sys.platform == 'win32' else 'mods')):
                 shutil.copytree(os.path.join(temp_backup_dir, 'Mods' if sys.platform == 'win32' else 'mods'), os.path.join(gdweave_path, 'Mods' if sys.platform == 'win32' else 'mods'), dirs_exist_ok=True)
                 logging.info('Restored Mods folder')
@@ -2571,8 +2600,9 @@ class BuoyUI:
     def extract_mod_from_zip(self, zip_path, temp_dir):
         """Extract mod from zip file by finding manifest.json with Id field"""
         try:
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(temp_dir)
+            extract_zip(zip_path, temp_dir)
+            #with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            #    zip_ref.extractall(temp_dir)
             manifest_files = []
             for root, _, files in os.walk(temp_dir):
                 if 'manifest.json' in files:

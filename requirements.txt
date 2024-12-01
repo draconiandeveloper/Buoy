@@ -5,3 +5,4 @@ python-dotenv==1.0.1
 pywinstyles==1.8; sys_platform == 'win32'
 Requests==2.32.3
 pyinstaller==6.11.1
+aiofiles==24.1.0

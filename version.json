@@ -3,6 +3,7 @@
     "message": "Welcome to Buoy!",
     "changelog": [
         "Fixed bug when refreshing the mod list that caused any re-enabled mods to create 3rd party duplicates",
-        "Added native Linux build support."
+        "Added native Linux build support.",
+        "Fixed issue with extracting GDWeave build artifact missing winmm.dll file."
     ]
 }
