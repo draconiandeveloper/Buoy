@@ -32,7 +32,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.0.2 Linux
+          tag_name: v1.0.20-Linux
           release_name: v1.0.2 Linux
           body: Release v1.0.2 Linux
           draft: false
@@ -76,7 +76,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.0.2 Windows
+          tag_name: v1.0.2-Windows
           release_name: v1.0.2 Windows
           body: Release v1.0.2 Windows
           draft: false
