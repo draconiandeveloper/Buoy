@@ -32,11 +32,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.head_commit.message }}
-          release_name: Release ${{ github.event.head_commit.message }}
-          overwrite: true
-          body: |
-            Release v1.0.2 Linux
+          tag_name: v1.0.2
+          release_name: v1.0.2
+          body: Release v1.0.2 Linux
           draft: false
           prerelease: false
       - name: Upload release artifact
@@ -78,10 +76,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.head_commit.message }}
-          release_name: Release ${{ github.event.head_commit.message }}
-          body: |
-            Release v1.0.2 Windows
+          tag_name: v1.0.2
+          release_name: v1.0.2
+          body: Release v1.0.2 Windows
           draft: false
           prerelease: false
       - name: Upload release artifact
