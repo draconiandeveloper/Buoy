@@ -2,16 +2,14 @@ name: Buoy build
 on: [push]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  build-linux:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        os: ['windows-latest', 'ubuntu-latest']
     steps:
-      - name: Setup checkout
+      - name: Setup Checkout
         uses: actions/checkout@v4
-      - name: Setup python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
@@ -23,27 +21,22 @@ jobs:
       - name: Create executable
         run: |
           python compiler.py
-      - name: Upload artifacts
+      - name: Package executable
         uses: actions/upload-artifact@v4
         with:
-          name: Buoy-${{ matrix.os }}
+          name: Buoy-linux
           path: dist/*
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: Buoy-*
-          merge-multiple: true
-          path: dist
-      - name: List artifacts
-        run: ls -R /home/runner/work/Buoy
       - name: Create release
         uses: actions/create-release@v1
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ matrix.os }}
-          release_name: Release ${{ matrix.os }}
+          tag_name: ${{ github.event.head_commit.message }}
+          release_name: Release ${{ github.event.head_commit.message }}
+          overwrite: true
+          body: |
+            Release v1.0.2 Linux
           draft: false
           prerelease: false
       - name: Upload release artifact
@@ -52,6 +45,51 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/work/Buoy/dist/Buoy-*
-          asset_name: Buoy-*
+          asset_path: dist/Buoy-linux.zip
+          asset_name: Buoy-linux.zip
+          asset_content_type: application/zip
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Setup Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+      - name: Create executable
+        run: |
+          python compiler.py
+      - name: Package executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: Buoy-windows
+          path: dist/*
+      - name: Create release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.head_commit.message }}
+          release_name: Release ${{ github.event.head_commit.message }}
+          body: |
+            Release v1.0.2 Windows
+          draft: false
+          prerelease: false
+      - name: Upload release artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/Buoy-windows.zip
+          asset_name: Buoy-windows.zip
           asset_content_type: application/zip
