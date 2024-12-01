@@ -44,7 +44,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.artifact_zip.artifact-url }}
+          asset_path: ${{ steps.artifact_zip.outputs.artifact-url }}
           asset_name: Buoy-linux.zip
           asset_content_type: application/zip
   build-windows:
@@ -89,6 +89,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.artifact_zip.artifact-url }}
+          asset_path: ${{ steps.artifact_zip.outputs.artifact-url }}
           asset_name: Buoy-windows.zip
           asset_content_type: application/zip
