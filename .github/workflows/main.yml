@@ -30,7 +30,7 @@ jobs:
       - name: Download package
         uses: actions/download-artifact@v4
         with:
-          name: Buoy-linux.zip
+          name: Buoy-linux
       - name: Create release
         uses: actions/create-release@v1
         id: create_release
@@ -79,7 +79,7 @@ jobs:
       - name: Download package
         uses: actions/download-artifact@v4
         with:
-          name: Buoy-windows.zip
+          name: Buoy-windows
       - name: Create release
         uses: actions/create-release@v1
         id: create_release
