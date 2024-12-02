@@ -3,6 +3,7 @@ packaging==24.2
 Pillow==9.5.0
 python-dotenv==1.0.1
 pywinstyles==1.8; sys_platform == 'win32'
-Requests==2.32.3
 pyinstaller==6.11.1
 aiofiles==24.1.0
+aiohttp==3.11.9
+pyyaml==6.0.2
