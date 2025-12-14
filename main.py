@@ -21,19 +21,10 @@ import uuid
 import appdirs
 import requests
 import tkinter as tk
-from dotenv import load_dotenv
-from PIL import Image, ImageTk
 from tkinter import ttk, filedialog, messagebox, simpledialog
 import aiofiles
 import asyncio
 import io
-
-try:
-    import pywinstyles
-except ImportError: # This occurs if we are on Linux/BSD/macOS or if we don't have PyWinStyles installed.
-    pass            # It's not like we really need PyWinStyles at the moment...
-
-load_dotenv()
 
 #
 # Since non-Windows OSes don't have environment variables set by default 
